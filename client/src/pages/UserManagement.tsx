@@ -162,7 +162,7 @@ export default function UserManagement() {
         description: "Đã tạo người dùng mới",
       });
       setIsDialogOpen(false);
-      resetForm();
+      // resetForm will be called when dialog closes via onOpenChange
     },
     onError: () => {
       toast({
@@ -197,7 +197,7 @@ export default function UserManagement() {
         description: "Đã cập nhật người dùng",
       });
       setIsDialogOpen(false);
-      resetForm();
+      // resetForm will be called when dialog closes via onOpenChange
     },
     onError: () => {
       toast({
@@ -251,6 +251,7 @@ export default function UserManagement() {
       userNote: "",
     });
     setEditingUser(null);
+    setCopyFromUser(null);
   };
 
   const handleOpenCreate = () => {
@@ -439,9 +440,39 @@ export default function UserManagement() {
     bulkDeleteMutation.mutate(Array.from(selectedUsers));
   };
 
+  // Copy user mutation using API endpoint
+  const copyUserMutation = useMutation({
+    mutationFn: async ({ sourceUserId, newUsername }: { sourceUserId: string; newUsername: string }) => {
+      const response = await fetchWithAuth(`/api/users/copy?sourceUserId=${sourceUserId}&newUsername=${newUsername}`, {
+        method: "POST",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to copy user");
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      toast({
+        title: "Thành công",
+        description: "Đã sao chép người dùng",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Lỗi",
+        description: "Không thể sao chép người dùng",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleCopyFrom = (user: User) => {
+    // Set copy source and form data first
     setCopyFromUser(user);
-    setFormData({
+    const copiedData = {
       username: "",
       password: "",
       fullname: user.fullname,
@@ -450,8 +481,13 @@ export default function UserManagement() {
       mobilePhone: user.mobilePhone,
       status: user.status,
       userNote: user.userNote,
-    });
-    setIsDialogOpen(true);
+    };
+    setFormData(copiedData);
+
+    // Open dialog after state is set
+    setTimeout(() => {
+      setIsDialogOpen(true);
+    }, 0);
   };
 
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -467,12 +503,12 @@ export default function UserManagement() {
 
   const handleDownloadTemplate = async () => {
     try {
-      const response = await fetchWithAuth("/api/users/template");
+      const response = await fetchWithAuth("/api/users/import-template");
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "user_template.csv";
+      a.download = "users_import_template.xlsx";
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -528,7 +564,7 @@ export default function UserManagement() {
               <input
                 ref={fileInputRef}
                 type="file"
-                accept=".csv,.txt"
+                accept=".xlsx,.xls,.csv,.txt"
                 onChange={handleImport}
                 style={{ display: "none" }}
               />
@@ -668,15 +704,26 @@ export default function UserManagement() {
       </Card>
 
       {/* Create/Edit Dialog */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+      <Dialog
+        open={isDialogOpen}
+        onOpenChange={(open) => {
+          setIsDialogOpen(open);
+          if (!open) {
+            // Only reset when dialog is closing
+            resetForm();
+          }
+        }}
+      >
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>
-              {editingUser ? "Chỉnh sửa người dùng" : "Thêm người dùng mới"}
+              {editingUser ? "Chỉnh sửa người dùng" : copyFromUser ? "Thêm người dùng mới (Sao chép)" : "Thêm người dùng mới"}
             </DialogTitle>
             <DialogDescription>
               {editingUser
                 ? "Cập nhật thông tin người dùng"
+                : copyFromUser
+                ? `Tạo người dùng mới từ dữ liệu của ${copyFromUser.fullname}`
                 : "Nhập thông tin người dùng mới"}
             </DialogDescription>
           </DialogHeader>
