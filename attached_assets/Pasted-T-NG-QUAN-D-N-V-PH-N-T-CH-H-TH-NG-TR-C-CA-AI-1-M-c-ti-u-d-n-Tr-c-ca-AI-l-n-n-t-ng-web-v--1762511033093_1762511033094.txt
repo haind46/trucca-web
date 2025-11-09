@@ -1,0 +1,179 @@
+TỔNG QUAN DỰ ÁN VÀ PHÂN TÍCH HỆ THỐNG: TRỰC CA AI
+
+1. Mục tiêu dự án
+
+Trực ca AI là nền tảng web và AI hỗ trợ giám sát, cảnh báo và phân tích tình trạng hoạt động của các hệ thống kỹ thuật – vận hành – CNTT theo ca trực.
+
+Hệ thống cho phép:
+
+• Tự động thu thập dữ liệu và log từ nhiều nguồn (ELK, Prometheus, Polestar, log ứng dụng , ...).
+• Phân tích, đánh giá mức độ sự cố bằng AI.
+• Sinh cảnh báo thông minh theo ngữ cảnh và mức độ ưu tiên.
+• Hỗ trợ điều phối ca trực, phân công nhiệm vụ, ghi nhận và tổng hợp báo cáo.
+• Cung cấp trang quản trị để quản trị viên chủ động cấu hình cảnh báo phù hợp với hệ thống.
+ 
+2. Sơ đồ tổng quan hệ thống :
+
+ 
+
+
+
+ 
+
+ 
+
+3. Phạm vi chức năng chính :
+
+1. 1. Chức năng Khai báo
+
+Hệ thống cho phép quản lý và khai báo toàn bộ các thành phần, đối tượng liên quan trong công tác vận hành, đảm bảo dữ liệu đầu vào chuẩn hoá cho các bước giám sát và cảnh báo tự động.
+
+Các nội dung khai báo chính gồm:
+
+• Loại Vận Hành:
+o Cho phép thêm/sửa/xoá loại vận hành (VD: Hệ điều hành, Cơ sở dữ liệu, Ứng dụng, Mạng…).
+o Thông tin khai báo gồm: Tên loại, địa chỉ IP, phân loại (OS/CSDL/Ứng dụng/Mạng).
+• Contacts (Danh bạ nhân sự):
+o Quản lý danh sách cán bộ tham gia trực ca, vận hành, kỹ thuật.
+o Trường thông tin: Họ tên, Đơn vị, Email, Số điện thoại, Vai trò (Lãnh đạo trực tiếp, Lãnh đạo Phòng Vận hành, Lãnh đạo Phòng Kỹ thuật, Team Leader, Bộ phận vận hành, Bộ phận kỹ thuật).
+o Cho phép liên kết contact với nhóm, hệ thống, và lịch trực tương ứng.
+• Group (Nhóm vận hành):
+o Tập hợp nhiều Contacts theo tổ chức hoặc theo nhóm xử lý sự cố.
+o Có liên kết với Chatwork Group ID để tự động gửi cảnh báo.
+o Cho phép thêm/sửa/xoá nhóm và gán quyền thông báo riêng biệt cho từng nhóm.
+• Lịch trực:
+o Khai báo ca trực của từng cá nhân hoặc nhóm.
+o Thông tin bao gồm: Loại vận hành, Nhân sự, Thời gian bắt đầu/ kết thúc ca trực.
+o Hệ thống có thể tự động xác định người nhận cảnh báo theo ca đang trực.
+• Mức độ cảnh báo:
+o Khai báo danh mục các cấp độ cảnh báo tiêu chuẩn: Down, Critical, Major, Minor, Clear.
+o Mỗi mức độ có thể gắn với quy tắc hành động (alert rule), màu hiển thị, và mức ưu tiên xử lý.
+• Rule cảnh báo (Alert Rule):
+o Định nghĩa điều kiện phát hiện sự cố dựa trên các chỉ số thu thập từ log hoặc Prometheus metrics.
+o Bao gồm: Biểu thức kiểm tra, nguồn dữ liệu, mức độ cảnh báo tương ứng và hành động khi vi phạm (gửi tin nhắn, tạo task, escalated alert).
+• Hệ thống (System):
+o Quản lý danh mục các hệ thống, ứng dụng, dịch vụ đang được giám sát.
+o Thông tin gồm: Tên hệ thống, Chủ đề, Nhóm Chatwork ID, Cấp độ hệ thống (1-3), Địa chỉ IP, Mã hệ thống trên PoleStar, Contacts và Groups liên quan.
+o Cho phép thêm, sửa, xoá, và sao chép (clone) cấu hình hệ thống tương tự để giảm thời gian thiết lập.
+ 
+
+2. Chức năng cấu hình cảnh báo : Cấu hình Hệ thống
+
+- Trong quá trình phân tích log nhận về thì các Source như PoleStar , ELK , Promethus. Khi thấy log vi phạm các Rule cảnh báo đã cấu hình trên từng Hệ thống thì lập tức gửi cảnh báo dựa trên Level hệ thống.
+
+Level Hệ thống / Mức độ cảnh báo
+
+Down
+
+Critical
+
+Major
+
+Clear
+
+Level 1
+
+Contacts nhận cảnh báo: Contacts có role : Tất cả các Role trong Group hệ thống (LDTT, LDP VH, LDP KT, Team Leader, BO VH, BO KT).Kênh: Có thể tự cấu hình theo Role — mặc định: SMS, EChatwork, SIPTruck.Tần suất cảnh báo: Gửi ngay lập tức, lặp lại sau mỗi 5 phút nếu chưa được xử lý.Ngưỡng tự động Clear: Khi log hoặc metric trở lại trạng thái bình thường trong 2 chu kỳ liên tiếp.
+
+Contacts nhận cảnh báo: Contacts có role : Tất cả các Role trong Group hệ thống.
+
+Kênh: EChatwork, Email.Tần suất: Gửi ngay và nhắc lại sau 10 phút.
+
+Ngưỡng Clear: Khi không còn log vi phạm trong 10 phút.
+
+Contacts nhận cảnh báo: Contacts có role : Team Leader, BO VH, BO KT.
+
+Kênh: EChatwork, Email nội bộ.
+
+Tần suất: Gửi 1 lần khi phát hiện.
+
+Clear: Khi trạng thái khôi phục.
+
+Contacts nhận cảnh báo: Contacts có role : Các Role liên quan đến cảnh báo trước đó
+
+.Kênh: EChatwork.
+
+Nội dung: “Sự cố đã được khắc phục”.
+
+Level 2
+
+Contacts nhận cảnh báo: Contacts có role: LDP VH, Team Leader, BO VH.
+
+Kênh: EChatwork, SMS.
+
+Tần suất: Gửi ngay khi phát hiện.
+
+Contacts nhận cảnh báo: Contacts có role : Team Leader, BO VH, BO KT
+
+Kênh: EChatwork.
+
+Ngưỡng Clear: Tự động khi ổn định trở lại.
+
+Contacts nhận cảnh báo: Contacts có role : BO VH.
+
+Kênh: EChatwork nhóm.
+
+Clear: Gửi thông báo tự động khi trạng thái phục hồi.
+
+Contacts nhận cảnh báo: Contacts có role : BO VH, Team Leader.
+
+Kênh: EChatwork.
+
+Level 3
+
+Contacts nhận cảnh báo: Contacts có role : BO VH phụ trách.
+
+Kênh: EChatwork hoặc Email (tùy cấu hình)..
+
+Ngưỡng Clear: Khi hệ thống hoạt động trở lại.
+
+Contacts nhận cảnh báo: Contacts có role : BO VH.
+
+Kênh: EChatwork nhóm nội bộ.
+
+Clear: Khi không còn lỗi trong 15 phút.
+
+Contacts nhận cảnh báo: Contacts có role : BO VH (người trực ca).
+
+Kênh: EChatwork
+
+Contacts nhận cảnh báo: Contacts có role : BO VH.
+
+Kênh: EChatwork.
+
+ 
+
+Bảng trên là cấu hình mẫu cho các hệ thống, Có thể thay đổi được Role Contact nhận cảnh bảo, và kênh gửi cảnh báo cho từng Contacts/Group.
+
+ 
+
+ 
+
+Giải thích chi tiết cơ chế hoạt động
+
+Tự cấu hình Role và Kênh nhận cảnh báo:
+
+o Mỗi Group hệ thống có thể gán danh sách Role và lựa chọn kênh nhận cảnh báo (SMS, EChatwork, Email, SIPTruck).
+o Người quản trị có thể tuỳ biến cấu hình này theo nhu cầu vận hành.
+Phân cấp mức độ hệ thống (Level):
+
+o Level 1: Hệ thống lõi, khi sự cố sẽ ảnh hưởng đến toàn mạng hoặc người dùng cuối → Cảnh báo khẩn cấp, gửi đến tất cả Role.
+o Level 2: Hệ thống trung gian, ảnh hưởng gián tiếp → Cảnh báo nhóm kỹ thuật, quản lý trung gian.
+o Level 3: Hệ thống không trọng yếu, dev/test → Cảnh báo nhẹ, chỉ gửi cho nhóm BO vận hành.
+3.Gửi cảnh báo đa kênh (Message Handling)
+
+• Message Composer tổng hợp thông tin:
+o Hệ thống bị ảnh hưởng.
+o Mức độ cảnh báo (Severity).
+o Nguyên nhân dự đoán.
+o Hướng xử lý đề xuất.
+o Log chi tiết hoặc link tham chiếu (tới ELK, Prometheus).
+o Danh sách người nhận (theo ca trực và nhóm phụ trách).
+• Alert Dispatcher gửi thông báo qua các kênh:
+1. SIPTRUNK (SMS Gateway) → gửi tin nhắn khẩn tới lãnh đạo hoặc người trực chính.
+2. eChat (eChatwork API) → gửi thông tin chi tiết, có thể reply để xác nhận (ACK).
+3. Call → Gọi đến người quản trị đã cấu hình.
+• Hệ thống hỗ trợ:
+o Gửi lại (retry) nếu kênh lỗi.
+o Ghi log trạng thái gửi.
+o Ưu tiên cảnh báo theo mức độ
