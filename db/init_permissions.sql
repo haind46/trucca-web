@@ -40,7 +40,7 @@ COMMENT ON COLUMN sys_group.status IS 'Trạng thái: active, inactive';
 -- ============================================
 CREATE TABLE sys_user_group (
   id SERIAL PRIMARY KEY,
-  user_id INTEGER NOT NULL,
+  user_id VARCHAR(36) NOT NULL,  -- UUID from sys_user
   group_id INTEGER NOT NULL REFERENCES sys_group(id) ON DELETE CASCADE,
   created_by INTEGER,
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
@@ -52,6 +52,7 @@ CREATE INDEX idx_sys_user_group_user ON sys_user_group(user_id);
 CREATE INDEX idx_sys_user_group_group ON sys_user_group(group_id);
 
 COMMENT ON TABLE sys_user_group IS 'Bảng map quan hệ nhiều-nhiều giữa người dùng và nhóm';
+COMMENT ON COLUMN sys_user_group.user_id IS 'UUID của user từ bảng sys_user (VARCHAR(36))';
 
 -- ============================================
 -- 3. Tạo bảng sys_resource (Tài nguyên/Chức năng)

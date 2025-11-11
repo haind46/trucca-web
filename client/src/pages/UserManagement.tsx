@@ -1,7 +1,8 @@
 import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Pencil, Trash2, Search, Copy, Upload, Download, FileDown } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Copy, Upload, Download, FileDown, Shield, Users } from "lucide-react";
 import { fetchWithAuth } from "@/lib/api";
+import { UserGroupsDialog } from "@/components/UserGroupsDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -41,6 +42,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 
 interface Department {
   id: string;
@@ -48,6 +50,13 @@ interface Department {
   deptCode: string;
   desc: string;
   createdAt: string;
+}
+
+interface GroupBasicInfo {
+  id: number;
+  name: string;
+  code: string;
+  status: string;
 }
 
 interface User {
@@ -59,6 +68,7 @@ interface User {
   mobilePhone: string;
   status: number;
   userNote: string;
+  groups?: GroupBasicInfo[];
   createdAt: string;
   updatedAt: string;
 }
@@ -72,6 +82,7 @@ interface UserFormData {
   mobilePhone: string;
   status: number;
   userNote: string;
+  groupIds: number[];
 }
 
 interface ApiResponse {
@@ -94,10 +105,12 @@ export default function UserManagement() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
+  const [isGroupsDialogOpen, setIsGroupsDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
   const [copyFromUser, setCopyFromUser] = useState<User | null>(null);
+  const [managingGroupsUser, setManagingGroupsUser] = useState<User | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState<UserFormData>({
     username: "",
@@ -108,10 +121,28 @@ export default function UserManagement() {
     mobilePhone: "",
     status: 1,
     userNote: "",
+    groupIds: [],
   });
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Fetch all groups for the dropdown
+  const { data: allGroupsData } = useQuery({
+    queryKey: ["all-groups"],
+    queryFn: async () => {
+      const response = await fetchWithAuth(
+        "http://localhost:8002/api/sys-groups?page=1&limit=100&sort_dir=asc&sort_key=name"
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch groups");
+      }
+
+      const result = await response.json();
+      return result.data.data as GroupBasicInfo[];
+    },
+  });
 
   // Fetch users
   const { data, isLoading } = useQuery({
@@ -127,13 +158,16 @@ export default function UserManagement() {
         params.append("keyWord", keyWord);
       }
 
-      const response = await fetchWithAuth(`/api/users?${params}`);
+      console.log("🔍 Fetching users with params:", params.toString());
+      const response = await fetchWithAuth(`http://localhost:8002/api/users?${params}`);
 
       if (!response.ok) {
         throw new Error("Failed to fetch users");
       }
 
       const result: ApiResponse = await response.json();
+      console.log("📊 Users fetched:", result);
+      console.log("📊 Sample user groups:", result.data?.data?.[0]?.groups);
       return result.data;
     },
   });
@@ -141,19 +175,57 @@ export default function UserManagement() {
   // Create user mutation
   const createMutation = useMutation({
     mutationFn: async (userData: UserFormData) => {
-      const response = await fetchWithAuth("/api/users/create", {
+      const { groupIds, ...userDataWithoutGroups } = userData;
+
+      console.log("📝 Creating user with data:", userDataWithoutGroups);
+      console.log("📝 Groups to assign:", groupIds);
+
+      // Create user first
+      const response = await fetchWithAuth("http://localhost:8002/api/users/create", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(userData),
+        body: JSON.stringify(userDataWithoutGroups),
       });
 
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error("❌ Create user failed:", errorText);
         throw new Error("Failed to create user");
       }
 
-      return response.json();
+      const result = await response.json();
+      const newUserId = result.data.id;
+      console.log("✅ User created successfully:", result);
+      console.log("🆔 New user ID:", newUserId);
+
+      // Then update groups if any selected
+      if (groupIds && groupIds.length > 0) {
+        console.log(`🔄 Assigning ${groupIds.length} groups to user ${newUserId}...`);
+
+        const groupResponse = await fetchWithAuth(
+          `http://localhost:8002/api/users/${newUserId}/groups`,
+          {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ groupIds }),
+          }
+        );
+
+        if (!groupResponse.ok) {
+          const errorText = await groupResponse.text();
+          console.error("❌ Assign groups failed:", errorText);
+          throw new Error("User created but failed to assign groups");
+        }
+
+        const groupResult = await groupResponse.json();
+        console.log("✅ Groups assigned successfully:", groupResult);
+      } else {
+        console.log("ℹ️ No groups to assign");
+      }
+
+      return result;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
@@ -164,10 +236,10 @@ export default function UserManagement() {
       setIsDialogOpen(false);
       // resetForm will be called when dialog closes via onOpenChange
     },
-    onError: () => {
+    onError: (error: Error) => {
       toast({
         title: "Lỗi",
-        description: "Không thể tạo người dùng",
+        description: error.message || "Không thể tạo người dùng",
         variant: "destructive",
       });
     },
@@ -176,19 +248,51 @@ export default function UserManagement() {
   // Edit user mutation
   const editMutation = useMutation({
     mutationFn: async ({ id, userData }: { id: string; userData: UserFormData }) => {
-      const response = await fetchWithAuth(`/api/users/edit?id=${id}`, {
+      const { groupIds, ...userDataWithoutGroups } = userData;
+
+      console.log("✏️ Updating user ID:", id);
+      console.log("✏️ User data:", userDataWithoutGroups);
+      console.log("✏️ Groups to update:", groupIds);
+
+      // Update user first
+      const response = await fetchWithAuth(`http://localhost:8002/api/users/edit?id=${id}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(userData),
+        body: JSON.stringify(userDataWithoutGroups),
       });
 
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error("❌ Update user failed:", errorText);
         throw new Error("Failed to update user");
       }
 
-      return response.json();
+      const userResult = await response.json();
+      console.log("✅ User updated successfully:", userResult);
+
+      // Then update groups
+      console.log(`🔄 Updating groups for user ${id}...`);
+      const groupResponse = await fetchWithAuth(
+        `http://localhost:8002/api/users/${id}/groups`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ groupIds: groupIds || [] }),
+        }
+      );
+
+      if (!groupResponse.ok) {
+        const errorText = await groupResponse.text();
+        console.error("❌ Update groups failed:", errorText);
+        throw new Error("User updated but failed to update groups");
+      }
+
+      const groupResult = await groupResponse.json();
+      console.log("✅ Groups updated successfully:", groupResult);
+
+      return userResult;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
@@ -199,10 +303,10 @@ export default function UserManagement() {
       setIsDialogOpen(false);
       // resetForm will be called when dialog closes via onOpenChange
     },
-    onError: () => {
+    onError: (error: Error) => {
       toast({
         title: "Lỗi",
-        description: "Không thể cập nhật người dùng",
+        description: error.message || "Không thể cập nhật người dùng",
         variant: "destructive",
       });
     },
@@ -211,7 +315,7 @@ export default function UserManagement() {
   // Delete user mutation
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const response = await fetchWithAuth(`/api/users/delete?ids=${id}`, {
+      const response = await fetchWithAuth(`http://localhost:8002/api/users/delete?ids=${id}`, {
         method: "POST",
       });
 
@@ -249,6 +353,7 @@ export default function UserManagement() {
       mobilePhone: "",
       status: 1,
       userNote: "",
+      groupIds: [],
     });
     setEditingUser(null);
     setCopyFromUser(null);
@@ -270,6 +375,7 @@ export default function UserManagement() {
       mobilePhone: user.mobilePhone,
       status: user.status,
       userNote: user.userNote,
+      groupIds: user.groups?.map(g => g.id) || [],
     });
     setIsDialogOpen(true);
   };
@@ -308,7 +414,7 @@ export default function UserManagement() {
   // Bulk delete mutation
   const bulkDeleteMutation = useMutation({
     mutationFn: async (ids: string[]) => {
-      const response = await fetchWithAuth(`/api/users/delete?ids=${ids.join(",")}`, {
+      const response = await fetchWithAuth(`http://localhost:8002/api/users/delete?ids=${ids.join(",")}`, {
         method: "POST",
       });
 
@@ -339,7 +445,7 @@ export default function UserManagement() {
   // Export mutation
   const exportMutation = useMutation({
     mutationFn: async () => {
-      const response = await fetchWithAuth("/api/users/export", {
+      const response = await fetchWithAuth("http://localhost:8002/api/users/export", {
         method: "GET",
       });
 
@@ -378,7 +484,7 @@ export default function UserManagement() {
       const formData = new FormData();
       formData.append("file", file);
 
-      const response = await fetchWithAuth("/api/users/import", {
+      const response = await fetchWithAuth("http://localhost:8002/api/users/import", {
         method: "POST",
         body: formData,
       });
@@ -443,7 +549,7 @@ export default function UserManagement() {
   // Copy user mutation using API endpoint
   const copyUserMutation = useMutation({
     mutationFn: async ({ sourceUserId, newUsername }: { sourceUserId: string; newUsername: string }) => {
-      const response = await fetchWithAuth(`/api/users/copy?sourceUserId=${sourceUserId}&newUsername=${newUsername}`, {
+      const response = await fetchWithAuth(`http://localhost:8002/api/users/copy?sourceUserId=${sourceUserId}&newUsername=${newUsername}`, {
         method: "POST",
       });
 
@@ -481,6 +587,7 @@ export default function UserManagement() {
       mobilePhone: user.mobilePhone,
       status: user.status,
       userNote: user.userNote,
+      groupIds: user.groups?.map(g => g.id) || [],
     };
     setFormData(copiedData);
 
@@ -503,7 +610,7 @@ export default function UserManagement() {
 
   const handleDownloadTemplate = async () => {
     try {
-      const response = await fetchWithAuth("/api/users/import-template");
+      const response = await fetchWithAuth("http://localhost:8002/api/users/import-template");
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -593,6 +700,7 @@ export default function UserManagement() {
                   <TableHead>Tên đăng nhập</TableHead>
                   <TableHead>Họ và tên</TableHead>
                   <TableHead>Bộ phận</TableHead>
+                  <TableHead>Nhóm</TableHead>
                   <TableHead>Số điện thoại</TableHead>
                   <TableHead>E-mail</TableHead>
                   <TableHead>Ngày tạo</TableHead>
@@ -619,6 +727,19 @@ export default function UserManagement() {
                       <TableCell>{user.username}</TableCell>
                       <TableCell>{user.fullname}</TableCell>
                       <TableCell>{user.department?.name || ""}</TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap gap-1">
+                          {user.groups && user.groups.length > 0 ? (
+                            user.groups.map((group) => (
+                              <Badge key={group.id} variant="outline" className="text-xs">
+                                {group.name}
+                              </Badge>
+                            ))
+                          ) : (
+                            <span className="text-sm text-gray-400">Chưa có nhóm</span>
+                          )}
+                        </div>
+                      </TableCell>
                       <TableCell>{user.mobilePhone}</TableCell>
                       <TableCell>{user.email}</TableCell>
                       <TableCell>
@@ -628,6 +749,17 @@ export default function UserManagement() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              setManagingGroupsUser(user);
+                              setIsGroupsDialogOpen(true);
+                            }}
+                            title="Quản lý nhóm"
+                          >
+                            <Shield className="h-4 w-4" />
+                          </Button>
                           <Button
                             variant="ghost"
                             size="icon"
@@ -830,6 +962,87 @@ export default function UserManagement() {
               </div>
 
               <div className="space-y-2">
+                <Label>Nhóm người dùng</Label>
+                <div className="border rounded-lg p-4 max-h-[200px] overflow-y-auto space-y-2">
+                  {allGroupsData && allGroupsData.length > 0 ? (
+                    allGroupsData.map((group) => (
+                      <div
+                        key={group.id}
+                        className="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded transition-colors"
+                      >
+                        <Checkbox
+                          id={`group-form-${group.id}`}
+                          checked={formData.groupIds.includes(group.id)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setFormData({
+                                ...formData,
+                                groupIds: [...formData.groupIds, group.id],
+                              });
+                            } else {
+                              setFormData({
+                                ...formData,
+                                groupIds: formData.groupIds.filter((id) => id !== group.id),
+                              });
+                            }
+                          }}
+                        />
+                        <label
+                          htmlFor={`group-form-${group.id}`}
+                          className="flex-1 cursor-pointer"
+                        >
+                          <div className="font-medium text-sm">{group.name}</div>
+                          <div className="text-xs text-gray-500">
+                            Mã: {group.code}
+                          </div>
+                        </label>
+                        <Badge
+                          variant={group.status === "active" ? "default" : "secondary"}
+                          className="text-xs"
+                        >
+                          {group.status === "active" ? "Hoạt động" : "Không hoạt động"}
+                        </Badge>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-4 text-gray-500 text-sm">
+                      Không có nhóm nào
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 mt-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      if (allGroupsData) {
+                        setFormData({
+                          ...formData,
+                          groupIds: allGroupsData.map((g) => g.id),
+                        });
+                      }
+                    }}
+                  >
+                    Chọn tất cả
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setFormData({
+                        ...formData,
+                        groupIds: [],
+                      });
+                    }}
+                  >
+                    Bỏ chọn tất cả
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="userNote">Ghi chú</Label>
                 <Input
                   id="userNote"
@@ -906,6 +1119,14 @@ export default function UserManagement() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Dialog quản lý nhóm */}
+      <UserGroupsDialog
+        open={isGroupsDialogOpen}
+        onOpenChange={setIsGroupsDialogOpen}
+        userId={managingGroupsUser?.id || null}
+        username={managingGroupsUser?.username || ""}
+      />
     </div>
   );
 }

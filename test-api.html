@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test User Groups API</title>
+    <style>
+        body { font-family: monospace; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        button { padding: 10px; margin: 5px; cursor: pointer; }
+        pre { background: #f5f5f5; padding: 10px; overflow-x: auto; }
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <h1>Test User Groups API</h1>
+
+    <div class="test-section">
+        <h2>1. Test GET /api/users (Check if groups are included)</h2>
+        <button onclick="testGetUsers()">Test Get Users</button>
+        <pre id="users-result"></pre>
+    </div>
+
+    <div class="test-section">
+        <h2>2. Test GET /api/users/{id}/groups</h2>
+        <input type="text" id="user-id" placeholder="Enter user ID" style="width: 300px; padding: 8px;">
+        <button onclick="testGetUserGroups()">Test Get User Groups</button>
+        <pre id="user-groups-result"></pre>
+    </div>
+
+    <div class="test-section">
+        <h2>3. Test PUT /api/users/{id}/groups</h2>
+        <input type="text" id="update-user-id" placeholder="Enter user ID" style="width: 300px; padding: 8px;"><br>
+        <input type="text" id="group-ids" placeholder="Enter group IDs (comma separated, e.g., 1,2,3)" style="width: 300px; padding: 8px;">
+        <button onclick="testUpdateUserGroups()">Test Update User Groups</button>
+        <pre id="update-groups-result"></pre>
+    </div>
+
+    <script>
+        const BASE_URL = 'http://localhost:8002';
+        const TOKEN = localStorage.getItem('token'); // Get from localStorage
+
+        async function fetchWithAuth(url, options = {}) {
+            const headers = {
+                'Content-Type': 'application/json',
+                ...options.headers
+            };
+
+            if (TOKEN) {
+                headers['Authorization'] = `Bearer ${TOKEN}`;
+            }
+
+            const response = await fetch(url, {
+                ...options,
+                headers
+            });
+
+            return response;
+        }
+
+        async function testGetUsers() {
+            const resultEl = document.getElementById('users-result');
+            resultEl.textContent = 'Loading...';
+
+            try {
+                const response = await fetchWithAuth(`${BASE_URL}/api/users?page=1&limit=5`);
+                const data = await response.json();
+
+                resultEl.innerHTML = `<div class="success">✅ Status: ${response.status}</div>`;
+                resultEl.innerHTML += `<div>Response:</div>`;
+                resultEl.innerHTML += `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+
+                // Check if users have groups field
+                if (data.data?.data?.[0]) {
+                    const firstUser = data.data.data[0];
+                    if (firstUser.groups !== undefined) {
+                        resultEl.innerHTML += `<div class="success">✅ Groups field exists in user object</div>`;
+                        resultEl.innerHTML += `<div>Sample groups: ${JSON.stringify(firstUser.groups, null, 2)}</div>`;
+                    } else {
+                        resultEl.innerHTML += `<div class="error">❌ Groups field NOT found in user object</div>`;
+                        resultEl.innerHTML += `<div>Available fields: ${Object.keys(firstUser).join(', ')}</div>`;
+                    }
+                }
+            } catch (error) {
+                resultEl.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        async function testGetUserGroups() {
+            const userId = document.getElementById('user-id').value;
+            const resultEl = document.getElementById('user-groups-result');
+
+            if (!userId) {
+                resultEl.textContent = 'Please enter a user ID';
+                return;
+            }
+
+            resultEl.textContent = 'Loading...';
+
+            try {
+                const response = await fetchWithAuth(`${BASE_URL}/api/users/${userId}/groups`);
+                const data = await response.json();
+
+                resultEl.innerHTML = `<div class="success">✅ Status: ${response.status}</div>`;
+                resultEl.innerHTML += `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+            } catch (error) {
+                resultEl.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        async function testUpdateUserGroups() {
+            const userId = document.getElementById('update-user-id').value;
+            const groupIdsStr = document.getElementById('group-ids').value;
+            const resultEl = document.getElementById('update-groups-result');
+
+            if (!userId || !groupIdsStr) {
+                resultEl.textContent = 'Please enter user ID and group IDs';
+                return;
+            }
+
+            const groupIds = groupIdsStr.split(',').map(id => parseInt(id.trim()));
+            resultEl.textContent = 'Loading...';
+
+            try {
+                console.log('Sending PUT request with groupIds:', groupIds);
+                const response = await fetchWithAuth(`${BASE_URL}/api/users/${userId}/groups`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ groupIds })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    resultEl.innerHTML = `<div class="success">✅ Status: ${response.status}</div>`;
+                } else {
+                    resultEl.innerHTML = `<div class="error">❌ Status: ${response.status}</div>`;
+                }
+                resultEl.innerHTML += `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+
+                // After update, fetch the user again to verify
+                setTimeout(async () => {
+                    const verifyResponse = await fetchWithAuth(`${BASE_URL}/api/users/${userId}/groups`);
+                    const verifyData = await verifyResponse.json();
+                    resultEl.innerHTML += `<div class="success">Verification - Groups after update:</div>`;
+                    resultEl.innerHTML += `<pre>${JSON.stringify(verifyData, null, 2)}</pre>`;
+                }, 1000);
+            } catch (error) {
+                resultEl.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        // Auto-detect token
+        window.addEventListener('load', () => {
+            if (!TOKEN) {
+                alert('⚠️ No authentication token found in localStorage.\nPlease login first at http://localhost:8002 and come back to this page.');
+            } else {
+                console.log('Token found:', TOKEN.substring(0, 20) + '...');
+            }
+        });
+    </script>
+</body>
+</html>

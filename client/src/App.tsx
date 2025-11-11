@@ -18,6 +18,8 @@ import ConfigContacts from "@/pages/ConfigContacts";
 import ConfigGroups from "@/pages/ConfigGroups";
 import ConfigRules from "@/pages/ConfigRules";
 import UserManagement from "@/pages/UserManagement";
+import UserGroupManagement from "@/pages/UserGroupManagement";
+import PermissionManagement from "@/pages/PermissionManagement";
 import UnderDevelopment from "@/pages/UnderDevelopment";
 import NotFound from "@/pages/not-found";
 
@@ -27,8 +29,8 @@ function Router() {
       {/* I. Quản trị hệ thống */}
       <Route path="/" component={Dashboard} />
       <Route path="/admin/users" component={UserManagement} />
-      <Route path="/admin/user-groups" component={UnderDevelopment} />
-      <Route path="/admin/permissions" component={UnderDevelopment} />
+      <Route path="/admin/user-groups" component={UserGroupManagement} />
+      <Route path="/admin/permissions" component={PermissionManagement} />
 
       {/* II. Cấu hình hệ thống */}
       <Route path="/config/systems" component={ConfigSystems} />
@@ -81,7 +83,7 @@ function ProtectedApp() {
         <div className="flex flex-col flex-1">
           <header className="flex items-center justify-between p-4 border-b">
             <SidebarTrigger data-testid="button-sidebar-toggle" />
-            <div className="text-sm font-semibold">Trực Ca AI</div>
+            <div className="text-xl font-semibold">MOBIFONE - HỆ THỐNG TRỰC CA AI</div>
             <Button
               variant="ghost"
               size="sm"
