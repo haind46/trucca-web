@@ -14,6 +14,7 @@ import Alerts from "@/pages/Alerts";
 import Schedules from "@/pages/Schedules";
 import Reports from "@/pages/Reports";
 import ConfigSystems from "@/pages/ConfigSystems";
+import ConfigOperationTypes from "@/pages/ConfigOperationTypes";
 import ConfigContacts from "@/pages/ConfigContacts";
 import ConfigGroups from "@/pages/ConfigGroups";
 import ConfigRules from "@/pages/ConfigRules";
@@ -34,7 +35,7 @@ function Router() {
 
       {/* II. Cấu hình hệ thống */}
       <Route path="/config/systems" component={ConfigSystems} />
-      <Route path="/config/operation-types" component={UnderDevelopment} />
+      <Route path="/config/operation-types" component={ConfigOperationTypes} />
       <Route path="/config/system-levels" component={UnderDevelopment} />
       <Route path="/config/contacts" component={ConfigContacts} />
       <Route path="/config/groups" component={ConfigGroups} />
