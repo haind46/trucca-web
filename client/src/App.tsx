@@ -20,6 +20,7 @@ import ConfigGroups from "@/pages/ConfigGroups";
 import ConfigRules from "@/pages/ConfigRules";
 import UserManagement from "@/pages/UserManagement";
 import UserGroupManagement from "@/pages/UserGroupManagement";
+import DepartmentManagement from "@/pages/DepartmentManagement";
 import PermissionManagement from "@/pages/PermissionManagement";
 import UnderDevelopment from "@/pages/UnderDevelopment";
 import NotFound from "@/pages/not-found";
@@ -31,6 +32,7 @@ function Router() {
       <Route path="/" component={Dashboard} />
       <Route path="/admin/users" component={UserManagement} />
       <Route path="/admin/user-groups" component={UserGroupManagement} />
+      <Route path="/admin/departments" component={DepartmentManagement} />
       <Route path="/admin/permissions" component={PermissionManagement} />
 
       {/* II. Cấu hình hệ thống */}

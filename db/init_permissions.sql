@@ -1,18 +1,76 @@
 -- ============================================
 -- Script tạo bảng và load dữ liệu mẫu
 -- Hệ thống Quản lý nhóm người dùng và Phân quyền
+-- Version: 2.0 (Cập nhật đầy đủ menu)
+-- ============================================
+--
+-- MỤC LỤC:
+-- 1. Xóa dữ liệu cũ (DELETE) để có thể chạy lại nhiều lần
+-- 2. Tạo bảng (CREATE TABLE IF NOT EXISTS)
+-- 3. Insert nhóm người dùng (sys_group): 5 nhóm
+-- 4. Insert tài nguyên (sys_resource): Menu + API
+--    - I. Quản trị hệ thống (Admin)
+--      + Dashboard
+--      + Quản lý người dùng
+--      + Quản lý nhóm người dùng
+--      + Quản lý đơn vị
+--      + Phân quyền
+--    - II. Cấu hình hệ thống (Config) - 12 menu con
+--      + Danh sách hệ thống
+--      + Loại vận hành
+--      + Cấp độ hệ thống
+--      + Thông tin liên hệ
+--      + Nhóm liên hệ
+--      + Quy tắc cảnh báo
+--      + Lịch trực ca
+--      + Cấu hình cảnh báo
+--      + Cấu hình thông báo
+--      + Cấu hình Incidents
+--      + Cấu hình Log Analysis
+--      + Cấu hình Servers
+--    - III. Báo cáo, thống kê (Reports)
+--      + Báo cáo ca trực
+--      + Lịch sử cảnh báo
+-- 5. Insert phân quyền (sys_permission): Gán quyền cho 5 nhóm
+-- 6. Tạo trigger tự động cập nhật updated_at
+-- 7. Hiển thị thống kê
+--
+-- CÁCH SỬ DỤNG:
+-- - Chạy lần đầu: Tạo bảng + insert dữ liệu
+-- - Chạy lại: Xóa dữ liệu cũ + insert lại (giữ nguyên cấu trúc bảng)
 -- ============================================
 
--- Xóa các bảng nếu đã tồn tại (theo thứ tự ngược lại)
-DROP TABLE IF EXISTS sys_permission CASCADE;
-DROP TABLE IF EXISTS sys_user_group CASCADE;
-DROP TABLE IF EXISTS sys_resource CASCADE;
-DROP TABLE IF EXISTS sys_group CASCADE;
+-- ============================================
+-- BƯỚC 1: XÓA DỮ LIỆU CŨ (để có thể chạy lại)
+-- ============================================
+
+-- Xóa dữ liệu cũ trong các bảng (giữ lại cấu trúc bảng)
+DELETE FROM sys_permission;
+DELETE FROM sys_user_group;
+DELETE FROM sys_resource;
+DELETE FROM sys_group;
+
+-- Reset sequence để ID bắt đầu lại từ 1
+ALTER SEQUENCE IF EXISTS sys_group_id_seq RESTART WITH 1;
+ALTER SEQUENCE IF EXISTS sys_resource_id_seq RESTART WITH 1;
+ALTER SEQUENCE IF EXISTS sys_permission_id_seq RESTART WITH 1;
+ALTER SEQUENCE IF EXISTS sys_user_group_id_seq RESTART WITH 1;
+
+-- Nếu các bảng chưa tồn tại, tạo mới (không ảnh hưởng nếu đã có)
+-- Xóa các bảng nếu đã tồn tại (chỉ dùng khi muốn tạo lại hoàn toàn)
+-- DROP TABLE IF EXISTS sys_permission CASCADE;
+-- DROP TABLE IF EXISTS sys_user_group CASCADE;
+-- DROP TABLE IF EXISTS sys_resource CASCADE;
+-- DROP TABLE IF EXISTS sys_group CASCADE;
+
+-- ============================================
+-- BƯỚC 2: TẠO BẢNG (nếu chưa có)
+-- ============================================
 
 -- ============================================
 -- 1. Tạo bảng sys_group (Nhóm người dùng)
 -- ============================================
-CREATE TABLE sys_group (
+CREATE TABLE IF NOT EXISTS sys_group (
   id SERIAL PRIMARY KEY,
   name VARCHAR(100) NOT NULL UNIQUE,
   code VARCHAR(50) NOT NULL UNIQUE,
@@ -26,8 +84,8 @@ CREATE TABLE sys_group (
 );
 
 -- Indexes
-CREATE INDEX idx_sys_group_code ON sys_group(code);
-CREATE INDEX idx_sys_group_status ON sys_group(status);
+CREATE INDEX IF NOT EXISTS idx_sys_group_code ON sys_group(code);
+CREATE INDEX IF NOT EXISTS idx_sys_group_status ON sys_group(status);
 
 -- Comments
 COMMENT ON TABLE sys_group IS 'Bảng quản lý nhóm người dùng';
@@ -38,7 +96,7 @@ COMMENT ON COLUMN sys_group.status IS 'Trạng thái: active, inactive';
 -- ============================================
 -- 2. Tạo bảng sys_user_group (Map người dùng - nhóm)
 -- ============================================
-CREATE TABLE sys_user_group (
+CREATE TABLE IF NOT EXISTS sys_user_group (
   id SERIAL PRIMARY KEY,
   user_id VARCHAR(36) NOT NULL,  -- UUID from sys_user
   group_id INTEGER NOT NULL REFERENCES sys_group(id) ON DELETE CASCADE,
@@ -48,8 +106,8 @@ CREATE TABLE sys_user_group (
 );
 
 -- Indexes
-CREATE INDEX idx_sys_user_group_user ON sys_user_group(user_id);
-CREATE INDEX idx_sys_user_group_group ON sys_user_group(group_id);
+CREATE INDEX IF NOT EXISTS idx_sys_user_group_user ON sys_user_group(user_id);
+CREATE INDEX IF NOT EXISTS idx_sys_user_group_group ON sys_user_group(group_id);
 
 COMMENT ON TABLE sys_user_group IS 'Bảng map quan hệ nhiều-nhiều giữa người dùng và nhóm';
 COMMENT ON COLUMN sys_user_group.user_id IS 'UUID của user từ bảng sys_user (VARCHAR(36))';
@@ -57,7 +115,7 @@ COMMENT ON COLUMN sys_user_group.user_id IS 'UUID của user từ bảng sys_use
 -- ============================================
 -- 3. Tạo bảng sys_resource (Tài nguyên/Chức năng)
 -- ============================================
-CREATE TABLE sys_resource (
+CREATE TABLE IF NOT EXISTS sys_resource (
   id SERIAL PRIMARY KEY,
   name VARCHAR(100) NOT NULL,
   code VARCHAR(100) NOT NULL UNIQUE,
@@ -75,10 +133,10 @@ CREATE TABLE sys_resource (
 );
 
 -- Indexes
-CREATE INDEX idx_sys_resource_code ON sys_resource(code);
-CREATE INDEX idx_sys_resource_type ON sys_resource(type);
-CREATE INDEX idx_sys_resource_parent ON sys_resource(parent_id);
-CREATE INDEX idx_sys_resource_path_method ON sys_resource(path, method);
+CREATE INDEX IF NOT EXISTS idx_sys_resource_code ON sys_resource(code);
+CREATE INDEX IF NOT EXISTS idx_sys_resource_type ON sys_resource(type);
+CREATE INDEX IF NOT EXISTS idx_sys_resource_parent ON sys_resource(parent_id);
+CREATE INDEX IF NOT EXISTS idx_sys_resource_path_method ON sys_resource(path, method);
 
 COMMENT ON TABLE sys_resource IS 'Bảng định nghĩa các tài nguyên và chức năng hệ thống';
 COMMENT ON COLUMN sys_resource.type IS 'menu: Menu sidebar, api: API endpoint, button: Nút chức năng';
@@ -87,7 +145,7 @@ COMMENT ON COLUMN sys_resource.method IS 'GET, POST, PUT, DELETE - áp dụng ch
 -- ============================================
 -- 4. Tạo bảng sys_permission (Quyền của nhóm)
 -- ============================================
-CREATE TABLE sys_permission (
+CREATE TABLE IF NOT EXISTS sys_permission (
   id SERIAL PRIMARY KEY,
   group_id INTEGER NOT NULL REFERENCES sys_group(id) ON DELETE CASCADE,
   resource_id INTEGER NOT NULL REFERENCES sys_resource(id) ON DELETE CASCADE,
@@ -99,9 +157,9 @@ CREATE TABLE sys_permission (
 );
 
 -- Indexes
-CREATE INDEX idx_sys_permission_group ON sys_permission(group_id);
-CREATE INDEX idx_sys_permission_resource ON sys_permission(resource_id);
-CREATE INDEX idx_sys_permission_access ON sys_permission(group_id, resource_id, can_access);
+CREATE INDEX IF NOT EXISTS idx_sys_permission_group ON sys_permission(group_id);
+CREATE INDEX IF NOT EXISTS idx_sys_permission_resource ON sys_permission(resource_id);
+CREATE INDEX IF NOT EXISTS idx_sys_permission_access ON sys_permission(group_id, resource_id, can_access);
 
 COMMENT ON TABLE sys_permission IS 'Bảng phân quyền: nhóm nào được truy cập tài nguyên nào';
 COMMENT ON COLUMN sys_permission.can_access IS 'Cho phép truy cập tài nguyên';
@@ -158,7 +216,7 @@ BEGIN
   -- Menu cấp 2: Quản lý nhóm người dùng
   -- ====================
   INSERT INTO sys_resource (name, code, type, path, icon, parent_id, sort_order, is_system) VALUES
-  ('Quản lý nhóm người dùng', 'ADMIN_GROUPS', 'menu', '/admin/user-groups', 'Users', admin_menu_id, 2, true)
+  ('Quản lý nhóm người dùng', 'ADMIN_USER_GROUPS', 'menu', '/admin/user-groups', 'Users', admin_menu_id, 2, true)
   RETURNING id INTO groups_menu_id;
 
   INSERT INTO sys_resource (name, code, type, path, method, parent_id, is_system) VALUES
@@ -172,10 +230,16 @@ BEGIN
   ('Xóa người dùng khỏi nhóm', 'ADMIN_GROUPS_REMOVE_USER', 'api', '/api/user-groups/:id/users/:userId', 'DELETE', groups_menu_id, true);
 
   -- ====================
+  -- Menu cấp 2: Quản lý đơn vị
+  -- ====================
+  INSERT INTO sys_resource (name, code, type, path, icon, parent_id, sort_order, is_system) VALUES
+  ('Quản lý đơn vị', 'ADMIN_DEPARTMENTS', 'menu', '/admin/departments', 'Building2', admin_menu_id, 3, true);
+
+  -- ====================
   -- Menu cấp 2: Phân quyền
   -- ====================
   INSERT INTO sys_resource (name, code, type, path, icon, parent_id, sort_order, is_system) VALUES
-  ('Phân quyền', 'ADMIN_PERMISSIONS', 'menu', '/admin/permissions', 'Shield', admin_menu_id, 3, true)
+  ('Phân quyền', 'ADMIN_PERMISSIONS', 'menu', '/admin/permissions', 'Shield', admin_menu_id, 4, true)
   RETURNING id INTO perms_menu_id;
 
   INSERT INTO sys_resource (name, code, type, path, method, parent_id, is_system) VALUES
@@ -207,9 +271,21 @@ BEGIN
   INSERT INTO sys_resource (name, code, type, path, icon, parent_id, sort_order, is_system) VALUES
   ('Loại vận hành', 'CONFIG_OPERATION_TYPES', 'menu', '/config/operation-types', 'Tag', config_menu_id, 2, true);
 
+  INSERT INTO sys_resource (name, code, type, path, method, parent_id, is_system) VALUES
+  ('Xem danh sách loại vận hành', 'CONFIG_OPERATION_TYPES_VIEW', 'api', '/api/operation-types', 'GET', config_menu_id, true),
+  ('Thêm loại vận hành', 'CONFIG_OPERATION_TYPES_CREATE', 'api', '/api/operation-types', 'POST', config_menu_id, true),
+  ('Sửa loại vận hành', 'CONFIG_OPERATION_TYPES_UPDATE', 'api', '/api/operation-types/:id', 'PATCH', config_menu_id, true),
+  ('Xóa loại vận hành', 'CONFIG_OPERATION_TYPES_DELETE', 'api', '/api/operation-types/:id', 'DELETE', config_menu_id, true);
+
   -- Menu cấp 2: Cấp độ hệ thống
   INSERT INTO sys_resource (name, code, type, path, icon, parent_id, sort_order, is_system) VALUES
   ('Cấp độ hệ thống', 'CONFIG_SYSTEM_LEVELS', 'menu', '/config/system-levels', 'TrendingUp', config_menu_id, 3, true);
+
+  INSERT INTO sys_resource (name, code, type, path, method, parent_id, is_system) VALUES
+  ('Xem danh sách cấp độ', 'CONFIG_SYSTEM_LEVELS_VIEW', 'api', '/api/system-levels', 'GET', config_menu_id, true),
+  ('Thêm cấp độ', 'CONFIG_SYSTEM_LEVELS_CREATE', 'api', '/api/system-levels', 'POST', config_menu_id, true),
+  ('Sửa cấp độ', 'CONFIG_SYSTEM_LEVELS_UPDATE', 'api', '/api/system-levels/:id', 'PATCH', config_menu_id, true),
+  ('Xóa cấp độ', 'CONFIG_SYSTEM_LEVELS_DELETE', 'api', '/api/system-levels/:id', 'DELETE', config_menu_id, true);
 
   -- Menu cấp 2: Thông tin liên hệ
   INSERT INTO sys_resource (name, code, type, path, icon, parent_id, sort_order, is_system) VALUES
@@ -226,33 +302,75 @@ BEGIN
   INSERT INTO sys_resource (name, code, type, path, icon, parent_id, sort_order, is_system) VALUES
   ('Nhóm liên hệ', 'CONFIG_GROUPS', 'menu', '/config/groups', 'Layers', config_menu_id, 5, true);
 
+  INSERT INTO sys_resource (name, code, type, path, method, parent_id, is_system) VALUES
+  ('Xem danh sách nhóm liên hệ', 'CONFIG_GROUPS_VIEW', 'api', '/api/contact-groups', 'GET', config_menu_id, true),
+  ('Thêm nhóm liên hệ', 'CONFIG_GROUPS_CREATE', 'api', '/api/contact-groups', 'POST', config_menu_id, true),
+  ('Sửa nhóm liên hệ', 'CONFIG_GROUPS_UPDATE', 'api', '/api/contact-groups/:id', 'PATCH', config_menu_id, true),
+  ('Xóa nhóm liên hệ', 'CONFIG_GROUPS_DELETE', 'api', '/api/contact-groups/:id', 'DELETE', config_menu_id, true);
+
   -- Menu cấp 2: Quy tắc cảnh báo
   INSERT INTO sys_resource (name, code, type, path, icon, parent_id, sort_order, is_system) VALUES
   ('Quy tắc cảnh báo', 'CONFIG_ALERT_RULES', 'menu', '/config/alert-rules', 'Settings', config_menu_id, 6, true);
+
+  INSERT INTO sys_resource (name, code, type, path, method, parent_id, is_system) VALUES
+  ('Xem danh sách quy tắc', 'CONFIG_ALERT_RULES_VIEW', 'api', '/api/alert-rules', 'GET', config_menu_id, true),
+  ('Thêm quy tắc', 'CONFIG_ALERT_RULES_CREATE', 'api', '/api/alert-rules', 'POST', config_menu_id, true),
+  ('Sửa quy tắc', 'CONFIG_ALERT_RULES_UPDATE', 'api', '/api/alert-rules/:id', 'PATCH', config_menu_id, true),
+  ('Xóa quy tắc', 'CONFIG_ALERT_RULES_DELETE', 'api', '/api/alert-rules/:id', 'DELETE', config_menu_id, true);
 
   -- Menu cấp 2: Lịch trực ca
   INSERT INTO sys_resource (name, code, type, path, icon, parent_id, sort_order, is_system) VALUES
   ('Lịch trực ca', 'CONFIG_SCHEDULES', 'menu', '/config/schedules', 'Calendar', config_menu_id, 7, true);
 
+  INSERT INTO sys_resource (name, code, type, path, method, parent_id, is_system) VALUES
+  ('Xem lịch trực ca', 'CONFIG_SCHEDULES_VIEW', 'api', '/api/schedules', 'GET', config_menu_id, true),
+  ('Thêm lịch trực', 'CONFIG_SCHEDULES_CREATE', 'api', '/api/schedules', 'POST', config_menu_id, true),
+  ('Sửa lịch trực', 'CONFIG_SCHEDULES_UPDATE', 'api', '/api/schedules/:id', 'PATCH', config_menu_id, true),
+  ('Xóa lịch trực', 'CONFIG_SCHEDULES_DELETE', 'api', '/api/schedules/:id', 'DELETE', config_menu_id, true);
+
   -- Menu cấp 2: Cấu hình cảnh báo
   INSERT INTO sys_resource (name, code, type, path, icon, parent_id, sort_order, is_system) VALUES
   ('Cấu hình cảnh báo', 'CONFIG_ALERTS', 'menu', '/config/alerts', 'AlertTriangle', config_menu_id, 8, true);
+
+  INSERT INTO sys_resource (name, code, type, path, method, parent_id, is_system) VALUES
+  ('Xem cấu hình cảnh báo', 'CONFIG_ALERTS_VIEW', 'api', '/api/alerts/config', 'GET', config_menu_id, true),
+  ('Cập nhật cấu hình cảnh báo', 'CONFIG_ALERTS_UPDATE', 'api', '/api/alerts/config', 'PATCH', config_menu_id, true);
 
   -- Menu cấp 2: Cấu hình thông báo
   INSERT INTO sys_resource (name, code, type, path, icon, parent_id, sort_order, is_system) VALUES
   ('Cấu hình thông báo', 'CONFIG_NOTIFICATIONS', 'menu', '/config/notifications', 'Bell', config_menu_id, 9, true);
 
+  INSERT INTO sys_resource (name, code, type, path, method, parent_id, is_system) VALUES
+  ('Xem cấu hình thông báo', 'CONFIG_NOTIFICATIONS_VIEW', 'api', '/api/notifications/config', 'GET', config_menu_id, true),
+  ('Cập nhật cấu hình thông báo', 'CONFIG_NOTIFICATIONS_UPDATE', 'api', '/api/notifications/config', 'PATCH', config_menu_id, true);
+
   -- Menu cấp 2: Cấu hình Incidents
   INSERT INTO sys_resource (name, code, type, path, icon, parent_id, sort_order, is_system) VALUES
   ('Cấu hình Incidents', 'CONFIG_INCIDENTS', 'menu', '/config/incidents', 'Zap', config_menu_id, 10, true);
+
+  INSERT INTO sys_resource (name, code, type, path, method, parent_id, is_system) VALUES
+  ('Xem danh sách incidents', 'CONFIG_INCIDENTS_VIEW', 'api', '/api/incidents', 'GET', config_menu_id, true),
+  ('Thêm incident', 'CONFIG_INCIDENTS_CREATE', 'api', '/api/incidents', 'POST', config_menu_id, true),
+  ('Sửa incident', 'CONFIG_INCIDENTS_UPDATE', 'api', '/api/incidents/:id', 'PATCH', config_menu_id, true),
+  ('Xóa incident', 'CONFIG_INCIDENTS_DELETE', 'api', '/api/incidents/:id', 'DELETE', config_menu_id, true);
 
   -- Menu cấp 2: Cấu hình Log Analysis
   INSERT INTO sys_resource (name, code, type, path, icon, parent_id, sort_order, is_system) VALUES
   ('Cấu hình Log Analysis', 'CONFIG_LOG_ANALYSIS', 'menu', '/config/log-analysis', 'FileText', config_menu_id, 11, true);
 
+  INSERT INTO sys_resource (name, code, type, path, method, parent_id, is_system) VALUES
+  ('Xem cấu hình log', 'CONFIG_LOG_ANALYSIS_VIEW', 'api', '/api/logs/config', 'GET', config_menu_id, true),
+  ('Cập nhật cấu hình log', 'CONFIG_LOG_ANALYSIS_UPDATE', 'api', '/api/logs/config', 'PATCH', config_menu_id, true);
+
   -- Menu cấp 2: Cấu hình Servers
   INSERT INTO sys_resource (name, code, type, path, icon, parent_id, sort_order, is_system) VALUES
   ('Cấu hình Servers', 'CONFIG_SERVERS', 'menu', '/config/servers', 'Server', config_menu_id, 12, true);
+
+  INSERT INTO sys_resource (name, code, type, path, method, parent_id, is_system) VALUES
+  ('Xem danh sách servers', 'CONFIG_SERVERS_VIEW', 'api', '/api/servers', 'GET', config_menu_id, true),
+  ('Thêm server', 'CONFIG_SERVERS_CREATE', 'api', '/api/servers', 'POST', config_menu_id, true),
+  ('Sửa server', 'CONFIG_SERVERS_UPDATE', 'api', '/api/servers/:id', 'PATCH', config_menu_id, true),
+  ('Xóa server', 'CONFIG_SERVERS_DELETE', 'api', '/api/servers/:id', 'DELETE', config_menu_id, true);
 
   -- ====================
   -- Menu cấp 1: Báo cáo, thống kê
@@ -261,17 +379,31 @@ BEGIN
   ('Báo cáo, thống kê', 'REPORTS', 'menu', '/reports', 'BarChart3', 3, true)
   RETURNING id INTO reports_menu_id;
 
+  -- Menu cấp 2: Báo cáo ca trực
   INSERT INTO sys_resource (name, code, type, path, icon, parent_id, sort_order, is_system) VALUES
   ('Báo cáo ca trực', 'REPORTS_SHIFTS', 'menu', '/reports/shifts', 'FileBarChart', reports_menu_id, 1, true);
 
+  INSERT INTO sys_resource (name, code, type, path, method, parent_id, is_system) VALUES
+  ('Xem báo cáo ca trực', 'REPORTS_SHIFTS_VIEW', 'api', '/api/reports/shifts', 'GET', reports_menu_id, true),
+  ('Export báo cáo ca trực', 'REPORTS_SHIFTS_EXPORT', 'api', '/api/reports/shifts/export', 'POST', reports_menu_id, true);
+
+  -- Menu cấp 2: Lịch sử cảnh báo
   INSERT INTO sys_resource (name, code, type, path, icon, parent_id, sort_order, is_system) VALUES
   ('Lịch sử cảnh báo', 'REPORTS_ALERTS', 'menu', '/reports/alert-history', 'History', reports_menu_id, 2, true);
+
+  INSERT INTO sys_resource (name, code, type, path, method, parent_id, is_system) VALUES
+  ('Xem lịch sử cảnh báo', 'REPORTS_ALERTS_VIEW', 'api', '/api/reports/alert-history', 'GET', reports_menu_id, true),
+  ('Export lịch sử cảnh báo', 'REPORTS_ALERTS_EXPORT', 'api', '/api/reports/alert-history/export', 'POST', reports_menu_id, true);
 
   -- ====================
   -- Menu Dashboard (Root level)
   -- ====================
   INSERT INTO sys_resource (name, code, type, path, icon, sort_order, is_system) VALUES
   ('Dashboard', 'DASHBOARD', 'menu', '/', 'LayoutDashboard', 0, true);
+
+  INSERT INTO sys_resource (name, code, type, path, method, is_system) VALUES
+  ('Xem dashboard', 'DASHBOARD_VIEW', 'api', '/api/dashboard/stats', 'GET', true),
+  ('Lấy thống kê tổng quan', 'DASHBOARD_STATS', 'api', '/api/dashboard/overview', 'GET', true);
 
 END $$;
 
@@ -344,22 +476,27 @@ BEGIN
 
   -- Gán quyền:
   -- 1. Toàn bộ menu Config (Cấu hình hệ thống)
-  -- 2. Tất cả API trong /api/systems, /api/contacts, /api/groups, /api/rules, /api/schedules
+  -- 2. Tất cả API trong các module cấu hình
   -- 3. Dashboard để xem tổng quan
   INSERT INTO sys_permission (group_id, resource_id, can_access)
   SELECT system_manager_group_id, id, true
   FROM sys_resource
   WHERE code IN ('DASHBOARD', 'CONFIG')  -- Menu chính
     OR (type = 'menu' AND path LIKE '/config%')  -- Tất cả menu con trong Config
+    OR (type = 'api' AND code LIKE 'DASHBOARD_%')  -- API dashboard
     OR (type = 'api' AND (
       path LIKE '/api/systems%'
+      OR path LIKE '/api/operation-types%'
+      OR path LIKE '/api/system-levels%'
       OR path LIKE '/api/contacts%'
-      OR path LIKE '/api/groups%'
-      OR path LIKE '/api/rules%'
+      OR path LIKE '/api/contact-groups%'
+      OR path LIKE '/api/alert-rules%'
       OR path LIKE '/api/schedules%'
       OR path LIKE '/api/alerts%'
+      OR path LIKE '/api/notifications%'
       OR path LIKE '/api/incidents%'
       OR path LIKE '/api/logs%'
+      OR path LIKE '/api/servers%'
     ));
 
   RAISE NOTICE 'Đã gán quyền cho nhóm SYSTEM_MANAGER';
@@ -377,19 +514,22 @@ BEGIN
   -- 1. Dashboard
   -- 2. Toàn bộ menu Reports (Báo cáo, thống kê)
   -- 3. Xem các menu Config (chỉ xem, không sửa xóa)
-  -- 4. API GET để xem dữ liệu, POST để tạo báo cáo
+  -- 4. API GET để xem dữ liệu, POST để tạo/export báo cáo
   INSERT INTO sys_permission (group_id, resource_id, can_access)
   SELECT report_manager_group_id, id, true
   FROM sys_resource
   WHERE code IN ('DASHBOARD', 'REPORTS', 'CONFIG')  -- Menu chính
     OR (type = 'menu' AND (path LIKE '/reports%' OR path LIKE '/config%'))  -- Menu con
-    OR (type = 'api' AND path LIKE '/api/stats%')  -- API thống kê
+    OR (type = 'api' AND code LIKE 'DASHBOARD_%')  -- API dashboard
+    OR (type = 'api' AND code LIKE 'REPORTS_%')  -- API reports
     OR (type = 'api' AND method IN ('GET', 'POST') AND (
       path LIKE '/api/systems%'
+      OR path LIKE '/api/operation-types%'
       OR path LIKE '/api/contacts%'
       OR path LIKE '/api/alerts%'
       OR path LIKE '/api/incidents%'
       OR path LIKE '/api/schedules%'
+      OR path LIKE '/api/servers%'
     ));
 
   RAISE NOTICE 'Đã gán quyền cho nhóm REPORT_MANAGER';
@@ -405,6 +545,11 @@ BEGIN
     RETURN NEW;
 END;
 $$ language 'plpgsql';
+
+-- Drop triggers nếu đã tồn tại
+DROP TRIGGER IF EXISTS update_sys_group_updated_at ON sys_group;
+DROP TRIGGER IF EXISTS update_sys_resource_updated_at ON sys_resource;
+DROP TRIGGER IF EXISTS update_sys_permission_updated_at ON sys_permission;
 
 -- Trigger cho sys_group
 CREATE TRIGGER update_sys_group_updated_at BEFORE UPDATE ON sys_group

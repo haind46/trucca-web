@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Pencil, Trash2, Search, Copy, Upload, Download, FileDown, Shield } from "lucide-react";
 import { fetchWithAuth } from "@/lib/api";
@@ -127,6 +127,7 @@ export default function PermissionManagement() {
   const [searchInput, setSearchInput] = useState("");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [sortKey, setSortKey] = useState("createdAt");
+  const [typeFilter, setTypeFilter] = useState<string>("all"); // "all", "menu", "api", "button"
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -169,7 +170,7 @@ export default function PermissionManagement() {
 
   // Fetch danh sách resources
   const { data: resourcesData, isLoading: isLoadingResources } = useQuery<ApiResponse<Resource>>({
-    queryKey: ["resources", page, limit, keyWord, sortDir, sortKey],
+    queryKey: ["resources", page, limit, keyWord, sortDir, sortKey, typeFilter],
     queryFn: async () => {
       const params = new URLSearchParams({
         page: page.toString(),
@@ -177,6 +178,11 @@ export default function PermissionManagement() {
         sort_dir: sortDir,
         sort_key: sortKey,
       });
+
+      // Add type filter if not "all"
+      if (typeFilter !== "all") {
+        params.append("type", typeFilter);
+      }
 
       if (keyWord) {
         params.append("keyWord", keyWord);
@@ -626,13 +632,21 @@ export default function PermissionManagement() {
     }
   };
 
+  // Update selected resources when group permissions data changes
+  useEffect(() => {
+    if (groupPermissionsData?.data) {
+      console.log("📋 Group permissions loaded:", groupPermissionsData.data);
+      const resourceIds = new Set(groupPermissionsData.data.map((p) => p.resourceId));
+      console.log("✅ Setting selected resource IDs:", Array.from(resourceIds));
+      setSelectedResourceIds(resourceIds);
+    } else {
+      setSelectedResourceIds(new Set());
+    }
+  }, [groupPermissionsData]);
+
   // Permission Matrix handlers
   const handleGroupSelect = (groupId: number) => {
     setSelectedGroupId(groupId);
-    // Load permissions for this group
-    const permissions = groupPermissionsData?.data || [];
-    const resourceIds = new Set(permissions.map((p) => p.resourceId));
-    setSelectedResourceIds(resourceIds);
   };
 
   const handleResourceToggle = (resourceId: number, checked: boolean) => {
@@ -752,8 +766,23 @@ export default function PermissionManagement() {
                 </div>
               </div>
 
-              {/* Sort Controls */}
+              {/* Filter and Sort Controls */}
               <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <Label>Loại:</Label>
+                  <Select value={typeFilter} onValueChange={setTypeFilter}>
+                    <SelectTrigger className="w-[150px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Tất cả</SelectItem>
+                      <SelectItem value="menu">Menu</SelectItem>
+                      <SelectItem value="api">API</SelectItem>
+                      <SelectItem value="button">Button</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 <div className="flex items-center gap-2">
                   <Label>Sắp xếp:</Label>
                   <Select value={sortKey} onValueChange={setSortKey}>

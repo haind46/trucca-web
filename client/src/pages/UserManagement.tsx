@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Pencil, Trash2, Search, Copy, Upload, Download, FileDown, Shield, Users } from "lucide-react";
 import { fetchWithAuth } from "@/lib/api";
+import { departmentService } from "@/services/departmentService";
 import { UserGroupsDialog } from "@/components/UserGroupsDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,10 +46,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 
 interface Department {
-  id: string;
+  id: number;
   name: string;
   deptCode: string;
-  desc: string;
+  description: string | null;
   createdAt: string;
 }
 
@@ -78,7 +79,7 @@ interface UserFormData {
   password: string;
   fullname: string;
   email: string;
-  department: string;
+  department: number | null;
   mobilePhone: string;
   status: number;
   userNote: string;
@@ -117,7 +118,7 @@ export default function UserManagement() {
     password: "",
     fullname: "",
     email: "",
-    department: "",
+    department: null,
     mobilePhone: "",
     status: 1,
     userNote: "",
@@ -126,6 +127,31 @@ export default function UserManagement() {
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Fetch all departments for the dropdown
+  const { data: allDepartmentsData } = useQuery<Department[]>({
+    queryKey: ["all-departments"],
+    queryFn: async () => {
+      try {
+        console.log("🏢 Fetching departments...");
+        const response = await departmentService.getAll({
+          page: 1,
+          limit: 100,
+          sort_dir: "asc",
+          sort_key: "name",
+        });
+        console.log("🏢 Departments response:", response);
+        console.log("🏢 Departments data:", response.data);
+        // Backend returns data.data instead of data.content
+        const departments = (response.data as any)?.data || [];
+        console.log("🏢 Departments array:", departments);
+        return departments as Department[];
+      } catch (error) {
+        console.error("🏢 Error fetching departments:", error);
+        return [];
+      }
+    },
+  });
 
   // Fetch all groups for the dropdown
   const { data: allGroupsData } = useQuery({
@@ -175,18 +201,15 @@ export default function UserManagement() {
   // Create user mutation
   const createMutation = useMutation({
     mutationFn: async (userData: UserFormData) => {
-      const { groupIds, ...userDataWithoutGroups } = userData;
+      console.log("📝 Creating user with data:", userData);
 
-      console.log("📝 Creating user with data:", userDataWithoutGroups);
-      console.log("📝 Groups to assign:", groupIds);
-
-      // Create user first
+      // Backend v2.1 now supports groupIds in create request
       const response = await fetchWithAuth("http://localhost:8002/api/users/create", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(userDataWithoutGroups),
+        body: JSON.stringify(userData),
       });
 
       if (!response.ok) {
@@ -196,34 +219,7 @@ export default function UserManagement() {
       }
 
       const result = await response.json();
-      const newUserId = result.data.id;
-      console.log("✅ User created successfully:", result);
-      console.log("🆔 New user ID:", newUserId);
-
-      // Then update groups if any selected
-      if (groupIds && groupIds.length > 0) {
-        console.log(`🔄 Assigning ${groupIds.length} groups to user ${newUserId}...`);
-
-        const groupResponse = await fetchWithAuth(
-          `http://localhost:8002/api/users/${newUserId}/groups`,
-          {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ groupIds }),
-          }
-        );
-
-        if (!groupResponse.ok) {
-          const errorText = await groupResponse.text();
-          console.error("❌ Assign groups failed:", errorText);
-          throw new Error("User created but failed to assign groups");
-        }
-
-        const groupResult = await groupResponse.json();
-        console.log("✅ Groups assigned successfully:", groupResult);
-      } else {
-        console.log("ℹ️ No groups to assign");
-      }
+      console.log("✅ User created successfully with groups:", result);
 
       return result;
     },
@@ -248,19 +244,16 @@ export default function UserManagement() {
   // Edit user mutation
   const editMutation = useMutation({
     mutationFn: async ({ id, userData }: { id: string; userData: UserFormData }) => {
-      const { groupIds, ...userDataWithoutGroups } = userData;
-
       console.log("✏️ Updating user ID:", id);
-      console.log("✏️ User data:", userDataWithoutGroups);
-      console.log("✏️ Groups to update:", groupIds);
+      console.log("✏️ User data with groups:", userData);
 
-      // Update user first
+      // Backend v2.1 now supports groupIds in edit request
       const response = await fetchWithAuth(`http://localhost:8002/api/users/edit?id=${id}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(userDataWithoutGroups),
+        body: JSON.stringify(userData),
       });
 
       if (!response.ok) {
@@ -269,30 +262,10 @@ export default function UserManagement() {
         throw new Error("Failed to update user");
       }
 
-      const userResult = await response.json();
-      console.log("✅ User updated successfully:", userResult);
+      const result = await response.json();
+      console.log("✅ User updated successfully with groups:", result);
 
-      // Then update groups
-      console.log(`🔄 Updating groups for user ${id}...`);
-      const groupResponse = await fetchWithAuth(
-        `http://localhost:8002/api/users/${id}/groups`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ groupIds: groupIds || [] }),
-        }
-      );
-
-      if (!groupResponse.ok) {
-        const errorText = await groupResponse.text();
-        console.error("❌ Update groups failed:", errorText);
-        throw new Error("User updated but failed to update groups");
-      }
-
-      const groupResult = await groupResponse.json();
-      console.log("✅ Groups updated successfully:", groupResult);
-
-      return userResult;
+      return result;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
@@ -349,7 +322,7 @@ export default function UserManagement() {
       password: "",
       fullname: "",
       email: "",
-      department: "",
+      department: null,
       mobilePhone: "",
       status: 1,
       userNote: "",
@@ -371,7 +344,7 @@ export default function UserManagement() {
       password: "",
       fullname: user.fullname,
       email: user.email,
-      department: user.department?.deptCode || "",
+      department: user.department?.id || null,
       mobilePhone: user.mobilePhone,
       status: user.status,
       userNote: user.userNote,
@@ -583,7 +556,7 @@ export default function UserManagement() {
       password: "",
       fullname: user.fullname,
       email: "",
-      department: user.department?.deptCode || "",
+      department: user.department?.id || null,
       mobilePhone: user.mobilePhone,
       status: user.status,
       userNote: user.userNote,
@@ -699,18 +672,17 @@ export default function UserManagement() {
                   <TableHead>Mã user</TableHead>
                   <TableHead>Tên đăng nhập</TableHead>
                   <TableHead>Họ và tên</TableHead>
-                  <TableHead>Bộ phận</TableHead>
-                  <TableHead>Nhóm</TableHead>
+                  <TableHead>Đơn vị</TableHead>
+                  <TableHead>Nhóm người dùng</TableHead>
                   <TableHead>Số điện thoại</TableHead>
                   <TableHead>E-mail</TableHead>
-                  <TableHead>Ngày tạo</TableHead>
                   <TableHead className="text-right">Thao tác</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center">
+                    <TableCell colSpan={8} className="text-center">
                       Đang tải...
                     </TableCell>
                   </TableRow>
@@ -731,22 +703,17 @@ export default function UserManagement() {
                         <div className="flex flex-wrap gap-1">
                           {user.groups && user.groups.length > 0 ? (
                             user.groups.map((group) => (
-                              <Badge key={group.id} variant="outline" className="text-xs">
+                              <Badge key={group.id} variant="secondary" className="text-xs">
                                 {group.name}
                               </Badge>
                             ))
                           ) : (
-                            <span className="text-sm text-gray-400">Chưa có nhóm</span>
+                            <span className="text-muted-foreground text-sm">-</span>
                           )}
                         </div>
                       </TableCell>
                       <TableCell>{user.mobilePhone}</TableCell>
                       <TableCell>{user.email}</TableCell>
-                      <TableCell>
-                        {user.createdAt
-                          ? new Date(user.createdAt).toLocaleString("vi-VN")
-                          : ""}
-                      </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
                           <Button
@@ -790,7 +757,7 @@ export default function UserManagement() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center">
+                    <TableCell colSpan={8} className="text-center">
                       Không có dữ liệu
                     </TableCell>
                   </TableRow>
@@ -922,14 +889,42 @@ export default function UserManagement() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="department">Bộ phận</Label>
-                  <Input
-                    id="department"
-                    value={formData.department}
-                    onChange={(e) =>
-                      setFormData({ ...formData, department: e.target.value })
+                  <Label htmlFor="department">Đơn vị</Label>
+                  <Select
+                    value={formData.department?.toString() || "none"}
+                    onValueChange={(value) =>
+                      setFormData({
+                        ...formData,
+                        department: value === "none" ? null : parseInt(value)
+                      })
                     }
-                  />
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Chọn đơn vị" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Không chọn</SelectItem>
+                      {(() => {
+                        console.log("🔍 allDepartmentsData in render:", allDepartmentsData);
+                        console.log("🔍 Is array?", Array.isArray(allDepartmentsData));
+                        console.log("🔍 Length:", allDepartmentsData?.length);
+
+                        if (!allDepartmentsData || allDepartmentsData.length === 0) {
+                          return (
+                            <SelectItem value="no-data" disabled>
+                              Không có đơn vị nào
+                            </SelectItem>
+                          );
+                        }
+
+                        return allDepartmentsData.map((dept) => (
+                          <SelectItem key={dept.id} value={dept.id.toString()}>
+                            {dept.name} ({dept.deptCode})
+                          </SelectItem>
+                        ));
+                      })()}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="mobilePhone">Số điện thoại</Label>

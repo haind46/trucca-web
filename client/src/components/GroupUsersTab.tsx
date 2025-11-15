@@ -34,10 +34,11 @@ interface UserGroupMapping {
 interface ApiResponse {
   success: boolean;
   data: {
-    content: UserGroupMapping[];
-    totalElements: number;
+    items: UserGroupMapping[];
+    totalItems: number;
     totalPages: number;
     currentPage: number;
+    pageSize: number;
   };
   message: string;
   statusCode: number;
@@ -64,13 +65,15 @@ export function GroupUsersTab({ groupId, groupName }: GroupUsersTabProps) {
         throw new Error("Failed to fetch group users");
       }
 
-      return response.json();
+      const result = await response.json();
+      console.log("👥 Group users response:", result);
+      return result;
     },
     enabled: !!groupId,
   });
 
-  const users = data?.data.content || [];
-  const totalElements = data?.data.totalElements || 0;
+  const users = data?.data.items || [];
+  const totalElements = data?.data.totalItems || 0;
   const totalPages = data?.data.totalPages || 0;
 
   return (
@@ -111,7 +114,6 @@ export function GroupUsersTab({ groupId, groupName }: GroupUsersTabProps) {
                   <TableHead>Họ và tên</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Số điện thoại</TableHead>
-                  <TableHead>Trạng thái</TableHead>
                   <TableHead>Ngày thêm vào nhóm</TableHead>
                   <TableHead className="text-right">Thao tác</TableHead>
                 </TableRow>
@@ -128,13 +130,6 @@ export function GroupUsersTab({ groupId, groupName }: GroupUsersTabProps) {
                     </TableCell>
                     <TableCell>{mapping.user.email}</TableCell>
                     <TableCell>{mapping.user.mobilePhone}</TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={mapping.user.status === 1 ? "default" : "secondary"}
-                      >
-                        {mapping.user.status === 1 ? "Hoạt động" : "Không hoạt động"}
-                      </Badge>
-                    </TableCell>
                     <TableCell>
                       {new Date(mapping.createdAt).toLocaleDateString("vi-VN")}
                     </TableCell>

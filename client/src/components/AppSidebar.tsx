@@ -19,6 +19,7 @@ import {
   FileBarChart,
   Tag,
   TrendingUp,
+  Building2,
 } from "lucide-react";
 import {
   Sidebar,
@@ -50,6 +51,11 @@ const adminMenuItems = [
     title: "Quản lý nhóm người dùng",
     url: "/admin/user-groups",
     icon: Users,
+  },
+  {
+    title: "Quản lý đơn vị",
+    url: "/admin/departments",
+    icon: Building2,
   },
   {
     title: "Phân quyền",

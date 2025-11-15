@@ -73,7 +73,11 @@ export function UserGroupsDialog({
       }
 
       const result = await response.json();
-      return result.data as Group[];
+      console.log("👥 User groups response:", result);
+      // Backend returns data.items (not just data)
+      const groups = (result.data?.items || []).map((item: any) => item.group);
+      console.log("👥 Extracted groups:", groups);
+      return groups as Group[];
     },
     enabled: !!userId && open,
   });

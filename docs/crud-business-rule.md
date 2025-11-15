@@ -11,3 +11,5 @@ các màn hình CRUD đều fai có đầy đủ các tính năng:
 - Export file ra excel
 
 Lưu ý: API backend sử dụng chuẩn camelCase nhé!
+
+Port API Backend không phải 8080 mà mặc định 8002 nhé.
