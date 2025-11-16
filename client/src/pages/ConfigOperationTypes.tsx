@@ -73,7 +73,7 @@ const BASE_URL = "http://localhost:8002/api/operation-type";
 const getAllOperationTypes = async (
   page: number,
   limit: number,
-  keyWord?: string,
+  keyword?: string,
   sortDir: "asc" | "desc" = "desc",
   sortKey: string = "createdAt"
 ): Promise<PaginationResponse> => {
@@ -84,8 +84,8 @@ const getAllOperationTypes = async (
     sort_key: sortKey,
   });
 
-  if (keyWord) {
-    params.append("keyWord", keyWord);
+  if (keyword) {
+    params.append("keyword", keyword);
   }
 
   const response = await fetch(`${BASE_URL}?${params}`, {

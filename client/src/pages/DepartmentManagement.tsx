@@ -79,7 +79,7 @@ export default function DepartmentManagement() {
       const response = await departmentService.getAll({
         page,
         limit,
-        keyWord: searchTerm || undefined,
+        keyword: searchTerm || undefined,
         sort_key: "id",
         sort_dir: "desc",
       });
@@ -248,7 +248,7 @@ export default function DepartmentManagement() {
   const handleExport = async () => {
     try {
       const blob = await departmentService.exportToExcel({
-        keyWord: searchTerm || undefined,
+        keyword: searchTerm || undefined,
       });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");

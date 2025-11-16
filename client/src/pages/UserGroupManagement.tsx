@@ -99,7 +99,7 @@ export default function UserGroupManagement() {
 
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
-  const [keyWord, setKeyWord] = useState("");
+  const [keyword, setKeyword] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [sortKey, setSortKey] = useState("createdAt");
@@ -135,7 +135,7 @@ export default function UserGroupManagement() {
 
   // Fetch danh sách nhóm với pagination và filter
   const { data, isLoading, error } = useQuery<ApiResponse>({
-    queryKey: ["user-groups", page, limit, keyWord, sortDir, sortKey],
+    queryKey: ["user-groups", page, limit, keyword, sortDir, sortKey],
     queryFn: async () => {
       const params = new URLSearchParams({
         page: page.toString(),
@@ -144,8 +144,8 @@ export default function UserGroupManagement() {
         sort_key: sortKey,
       });
 
-      if (keyWord) {
-        params.append("keyWord", keyWord);
+      if (keyword) {
+        params.append("keyword", keyword);
       }
 
       const response = await fetchWithAuth(
@@ -480,7 +480,7 @@ export default function UserGroupManagement() {
 
   // Xử lý tìm kiếm
   const handleSearch = () => {
-    setKeyWord(searchInput);
+    setKeyword(searchInput);
     setPage(1);
   };
 

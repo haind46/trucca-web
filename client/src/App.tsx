@@ -15,6 +15,9 @@ import Schedules from "@/pages/Schedules";
 import Reports from "@/pages/Reports";
 import ConfigSystems from "@/pages/ConfigSystems";
 import ConfigOperationTypes from "@/pages/ConfigOperationTypes";
+import ConfigSystemLevel from "@/pages/ConfigSystemLevel";
+import ConfigRoles from "@/pages/ConfigRoles";
+import ConfigAlertFrequency from "@/pages/ConfigAlertFrequency";
 import ConfigContacts from "@/pages/ConfigContacts";
 import ConfigGroups from "@/pages/ConfigGroups";
 import ConfigRules from "@/pages/ConfigRules";
@@ -33,12 +36,14 @@ function Router() {
       <Route path="/admin/users" component={UserManagement} />
       <Route path="/admin/user-groups" component={UserGroupManagement} />
       <Route path="/admin/departments" component={DepartmentManagement} />
+      <Route path="/admin/roles" component={ConfigRoles} />
       <Route path="/admin/permissions" component={PermissionManagement} />
 
       {/* II. Cấu hình hệ thống */}
       <Route path="/config/systems" component={ConfigSystems} />
       <Route path="/config/operation-types" component={ConfigOperationTypes} />
-      <Route path="/config/system-levels" component={UnderDevelopment} />
+      <Route path="/config/system-levels" component={ConfigSystemLevel} />
+      <Route path="/config/alert-frequency" component={ConfigAlertFrequency} />
       <Route path="/config/contacts" component={ConfigContacts} />
       <Route path="/config/groups" component={ConfigGroups} />
       <Route path="/config/alert-rules" component={ConfigRules} />

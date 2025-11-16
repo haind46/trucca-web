@@ -20,6 +20,7 @@ import {
   Tag,
   TrendingUp,
   Building2,
+  Settings2,
 } from "lucide-react";
 import {
   Sidebar,
@@ -58,28 +59,14 @@ const adminMenuItems = [
     icon: Building2,
   },
   {
-    title: "Phân quyền",
-    url: "/admin/permissions",
+    title: "Quản lý vai trò",
+    url: "/admin/roles",
     icon: Shield,
   },
-];
-
-// II. Cấu hình hệ thống
-const configMenuItems = [
   {
-    title: "Danh sách hệ thống",
-    url: "/config/systems",
-    icon: Database,
-  },
-  {
-    title: "Loại vận hành",
-    url: "/config/operation-types",
-    icon: Tag,
-  },
-  {
-    title: "Cấp độ hệ thống",
-    url: "/config/system-levels",
-    icon: TrendingUp,
+    title: "Phân quyền",
+    url: "/admin/permissions",
+    icon: Settings2,
   },
   {
     title: "Thông tin liên hệ (Contacts)",
@@ -90,6 +77,30 @@ const configMenuItems = [
     title: "Nhóm liên hệ (Contacts Groups)",
     url: "/config/groups",
     icon: Layers,
+  },
+];
+
+// II. Cấu hình hệ thống
+const configMenuItems = [
+  {
+    title: "Cấp độ hệ thống (System Level)",
+    url: "/config/system-levels",
+    icon: TrendingUp,
+  },
+  {
+    title: "Loại vận hành (Operation Types)",
+    url: "/config/operation-types",
+    icon: Tag,
+  },
+  {
+    title: "Quản lý hệ thống (Systems)",
+    url: "/config/systems",
+    icon: Database,
+  },
+  {
+    title: "Tần suất cảnh báo (Alert Frequency)",
+    url: "/config/alert-frequency",
+    icon: Clock,
   },
   {
     title: "Quy tắc cảnh báo (Alert Rules)",
@@ -111,21 +122,13 @@ const configMenuItems = [
     url: "/config/notifications",
     icon: Bell,
   },
-  {
-    title: "Cấu hình Incidents",
-    url: "/config/incidents",
-    icon: Zap,
-  },
+ 
   {
     title: "Cấu hình Log Analysis",
     url: "/config/log-analysis",
     icon: FileText,
   },
-  {
-    title: "Cấu hình Servers",
-    url: "/config/servers",
-    icon: Server,
-  },
+
 ];
 
 // III. Báo cáo, thống kê

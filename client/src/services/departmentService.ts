@@ -21,7 +21,7 @@ export const departmentService = {
 
     if (params?.page) queryParams.append('page', params.page.toString());
     if (params?.limit) queryParams.append('limit', params.limit.toString());
-    if (params?.keyWord) queryParams.append('keyWord', params.keyWord);
+    if (params?.keyword) queryParams.append('keyword', params.keyword);
     if (params?.sort_dir) queryParams.append('sort_dir', params.sort_dir);
     if (params?.sort_key) queryParams.append('sort_key', params.sort_key);
 
@@ -97,7 +97,7 @@ export const departmentService = {
   exportToExcel: async (params?: DepartmentQueryParams): Promise<Blob> => {
     const queryParams = new URLSearchParams();
 
-    if (params?.keyWord) queryParams.append('keyWord', params.keyWord);
+    if (params?.keyword) queryParams.append('keyword', params.keyword);
     if (params?.sort_dir) queryParams.append('sort_dir', params.sort_dir);
     if (params?.sort_key) queryParams.append('sort_key', params.sort_key);
 

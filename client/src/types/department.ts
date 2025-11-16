@@ -34,7 +34,7 @@ export interface DepartmentApiResponse<T> {
 export interface DepartmentQueryParams {
   page?: number;
   limit?: number;
-  keyWord?: string;
+  keyword?: string;
   sort_dir?: 'asc' | 'desc';
   sort_key?: 'id' | 'name' | 'dept_code' | 'created_at';
 }

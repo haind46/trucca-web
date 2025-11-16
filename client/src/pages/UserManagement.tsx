@@ -101,7 +101,7 @@ interface ApiResponse {
 export default function UserManagement() {
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
-  const [keyWord, setKeyWord] = useState("");
+  const [keyword, setKeyword] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -172,7 +172,7 @@ export default function UserManagement() {
 
   // Fetch users
   const { data, isLoading } = useQuery({
-    queryKey: ["users", page, limit, keyWord],
+    queryKey: ["users", page, limit, keyword],
     queryFn: async () => {
       const params = new URLSearchParams({
         page: page.toString(),
@@ -180,8 +180,8 @@ export default function UserManagement() {
         sort_dir: "desc",
         sort_key: "createdAt",
       });
-      if (keyWord) {
-        params.append("keyWord", keyWord);
+      if (keyword) {
+        params.append("keyword", keyword);
       }
 
       console.log("🔍 Fetching users with params:", params.toString());
@@ -374,7 +374,7 @@ export default function UserManagement() {
   };
 
   const handleSearch = () => {
-    setKeyWord(searchInput);
+    setKeyword(searchInput);
     setPage(1);
   };
 

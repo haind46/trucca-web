@@ -123,7 +123,7 @@ export default function PermissionManagement() {
   const [activeTab, setActiveTab] = useState("resources");
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
-  const [keyWord, setKeyWord] = useState("");
+  const [keyword, setKeyword] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [sortKey, setSortKey] = useState("createdAt");
@@ -170,7 +170,7 @@ export default function PermissionManagement() {
 
   // Fetch danh sách resources
   const { data: resourcesData, isLoading: isLoadingResources } = useQuery<ApiResponse<Resource>>({
-    queryKey: ["resources", page, limit, keyWord, sortDir, sortKey, typeFilter],
+    queryKey: ["resources", page, limit, keyword, sortDir, sortKey, typeFilter],
     queryFn: async () => {
       const params = new URLSearchParams({
         page: page.toString(),
@@ -184,8 +184,8 @@ export default function PermissionManagement() {
         params.append("type", typeFilter);
       }
 
-      if (keyWord) {
-        params.append("keyWord", keyWord);
+      if (keyword) {
+        params.append("keyword", keyword);
       }
 
       const response = await fetchWithAuth(
@@ -552,7 +552,7 @@ export default function PermissionManagement() {
   };
 
   const handleSearch = () => {
-    setKeyWord(searchInput);
+    setKeyword(searchInput);
     setPage(1);
   };
 
