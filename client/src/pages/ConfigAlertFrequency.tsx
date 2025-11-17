@@ -268,7 +268,19 @@ export default function ConfigAlertFrequency() {
   };
 
   const handleCreateClick = () => {
-    resetForm();
+    // Tìm alertStatusId chưa được sử dụng
+    const usedIds = new Set(items.map(item => item.alertStatusId));
+    let newAlertStatusId = 1;
+    while (usedIds.has(newAlertStatusId)) {
+      newAlertStatusId++;
+    }
+
+    setFormData({
+      alertStatusId: newAlertStatusId,
+      repeatCount: null,
+      intervalMinutes: 10,
+      isActive: true
+    });
     setEditingItem(null);
     setIsDialogOpen(true);
   };

@@ -310,15 +310,9 @@ export default function ConfigRoles() {
     setPage(1);
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      handleSearch();
-    }
-  };
-
   const handleSelectAll = (checked: boolean) => {
     if (checked && data) {
-      setSelectedItems(new Set(data.items.map((item) => item.id)));
+      setSelectedItems(new Set(data.data.map((item) => item.id)));
     } else {
       setSelectedItems(new Set());
     }
@@ -413,87 +407,72 @@ export default function ConfigRoles() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold flex items-center gap-2">
-            <Shield className="h-6 w-6" />
-            Quản lý Vai trò
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Quản lý các vai trò trong hệ thống
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={handleDownloadTemplate}>
-            <FileDown className="h-4 w-4 mr-2" />
-            Tải template
-          </Button>
-          <Button variant="outline" size="sm" onClick={handleExport}>
-            <Download className="h-4 w-4 mr-2" />
-            Xuất Excel
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={importMutation.isPending}
-          >
-            <Upload className="h-4 w-4 mr-2" />
-            Nhập Excel
-          </Button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".xlsx,.xls,.csv,.txt"
-            className="hidden"
-            onChange={handleImport}
-          />
-          <Button onClick={handleCreateClick}>
-            <Plus className="h-4 w-4 mr-2" />
-            Thêm mới
-          </Button>
-        </div>
-      </div>
-
+    <div className="space-y-4">
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Danh sách Vai trò</CardTitle>
-            <div className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2">
+            <Shield className="h-5 w-5" />
+            Quản lý Vai trò
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between mb-4 gap-4">
+            <div className="flex items-center gap-2 flex-1 max-w-md">
               <Input
-                placeholder="Tìm kiếm..."
+                placeholder="Tìm kiếm theo tên, mô tả..."
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                onKeyPress={handleKeyPress}
-                className="w-64"
+                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                className="flex-1"
               />
-              <Button size="sm" onClick={handleSearch}>
+              <Button onClick={handleSearch} variant="outline" size="icon">
                 <Search className="h-4 w-4" />
               </Button>
             </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {selectedItems.size > 0 && (
-            <div className="mb-4 flex items-center gap-2">
-              <Badge variant="secondary">Đã chọn {selectedItems.size}</Badge>
-              <Button variant="destructive" size="sm" onClick={handleBulkDelete}>
-                <Trash2 className="h-4 w-4 mr-2" />
-                Xóa đã chọn
+            <div className="flex items-center gap-2">
+              {selectedItems.size > 0 && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleBulkDelete}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Xóa nhiều ({selectedItems.size})
+                </Button>
+              )}
+              <Button variant="outline" size="sm" onClick={handleDownloadTemplate}>
+                <FileDown className="h-4 w-4 mr-2" />
+                File mẫu
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={importMutation.isPending}
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                Import
+              </Button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".xlsx,.xls,.csv,.txt"
+                className="hidden"
+                onChange={handleImport}
+              />
+              <Button variant="outline" size="sm" onClick={handleExport}>
+                <Download className="h-4 w-4 mr-2" />
+                Export
+              </Button>
+              <Button onClick={handleCreateClick}>
+                <Plus className="h-4 w-4 mr-2" />
+                Thêm mới
               </Button>
             </div>
-          )}
+          </div>
 
-          {isLoading ? (
-            <div className="text-center py-8">Đang tải...</div>
-          ) : items.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              {keyword ? "Không tìm thấy kết quả" : "Chưa có dữ liệu"}
-            </div>
-          ) : (
-            <>
-              <Table>
+          <div className="border rounded-lg">
+            <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-12">
@@ -511,93 +490,108 @@ export default function ConfigRoles() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {items.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell>
-                        <Checkbox
-                          checked={selectedItems.has(item.id)}
-                          onCheckedChange={(checked) =>
-                            handleSelectOne(item.id, checked as boolean)
-                          }
-                        />
-                      </TableCell>
-                      <TableCell className="font-medium">{item.name}</TableCell>
-                      <TableCell className="max-w-md truncate">
-                        {item.description || "-"}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{item.displayOrder}</Badge>
-                      </TableCell>
-                      <TableCell>{getStatusBadge(item.isActive)}</TableCell>
-                      <TableCell>
-                        {new Date(item.createdAt).toLocaleDateString("vi-VN")}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleCopy(item)}
-                            title="Sao chép"
-                          >
-                            <Copy className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleEditClick(item)}
-                            title="Sửa"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDeleteClick(item.id)}
-                            title="Xóa"
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        </div>
+                  {isLoading ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center">
+                        Đang tải...
                       </TableCell>
                     </TableRow>
-                  ))}
+                  ) : items.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center text-muted-foreground">
+                        {keyword
+                          ? "Không tìm thấy kết quả phù hợp"
+                          : 'Chưa có vai trò nào. Nhấn "Thêm mới" để bắt đầu.'}
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    items.map((item) => (
+                      <TableRow key={item.id}>
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedItems.has(item.id)}
+                            onCheckedChange={(checked) =>
+                              handleSelectOne(item.id, checked as boolean)
+                            }
+                          />
+                        </TableCell>
+                        <TableCell className="font-medium">{item.name}</TableCell>
+                        <TableCell className="max-w-xs">
+                          <div className="text-sm text-muted-foreground line-clamp-2">
+                            {item.description || "-"}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{item.displayOrder}</Badge>
+                        </TableCell>
+                        <TableCell>{getStatusBadge(item.isActive)}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {new Date(item.createdAt).toLocaleDateString("vi-VN")}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleCopy(item)}
+                              title="Sao chép"
+                            >
+                              <Copy className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleEditClick(item)}
+                              title="Chỉnh sửa"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDeleteClick(item.id)}
+                              title="Xóa"
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
+            </div>
 
-              {totalPages > 1 && (
-                <div className="flex items-center justify-between mt-4">
-                  <div className="text-sm text-muted-foreground">
-                    Hiển thị {(page - 1) * limit + 1} - {Math.min(page * limit, totalItems)} trong
-                    tổng số {totalItems}
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setPage(page - 1)}
-                      disabled={page === 1}
-                    >
-                      Trước
-                    </Button>
-                    <div className="flex items-center gap-1">
-                      <span className="text-sm">
-                        Trang {page} / {totalPages}
-                      </span>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setPage(page + 1)}
-                      disabled={page === totalPages}
-                    >
-                      Sau
-                    </Button>
-                  </div>
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between mt-4">
+                <div className="text-sm text-muted-foreground">
+                  Hiển thị {(page - 1) * limit + 1} -{" "}
+                  {Math.min(page * limit, totalItems)} trong tổng số {totalItems}
                 </div>
-              )}
-            </>
-          )}
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage(page - 1)}
+                    disabled={page === 1}
+                  >
+                    Trước
+                  </Button>
+                  <div className="text-sm">
+                    Trang {page} / {totalPages}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage(page + 1)}
+                    disabled={page === totalPages}
+                  >
+                    Sau
+                  </Button>
+                </div>
+              </div>
+            )}
         </CardContent>
       </Card>
 
