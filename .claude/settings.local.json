@@ -8,7 +8,13 @@
       "Bash(find:*)",
       "Bash(mkdir:*)",
       "Bash(cat:*)",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Bash(docker-compose build:*)",
+      "Bash(docker run:*)",
+      "Bash(docker logs:*)",
+      "Bash(docker stop:*)",
+      "Bash(docker rm:*)",
+      "Bash(docker build:*)"
     ],
     "deny": [],
     "ask": []

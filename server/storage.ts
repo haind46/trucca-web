@@ -1,4 +1,7 @@
-import { db } from "./db";
+// Database imports (chỉ cần khi dùng DatabaseStorage)
+// import { db } from "./db";
+// import { eq, desc, and } from "drizzle-orm";
+
 import {
   systems,
   contacts,
@@ -28,7 +31,6 @@ import {
   type LogAnalysis,
   type InsertLogAnalysis,
 } from "@shared/schema";
-import { eq, desc, and } from "drizzle-orm";
 
 export interface IStorage {
   getSystems(): Promise<System[]>;
@@ -81,6 +83,325 @@ export interface IStorage {
 
   getLogAnalysis(): Promise<LogAnalysis[]>;
   createLogAnalysis(data: InsertLogAnalysis): Promise<LogAnalysis>;
+}
+
+// In-memory storage implementation (không cần database)
+export class InMemoryStorage implements IStorage {
+  private systems: System[] = [];
+  private contacts: Contact[] = [];
+  private groups: Group[] = [];
+  private alertRules: AlertRule[] = [];
+  private alerts: Alert[] = [];
+  private schedules: Schedule[] = [];
+  private incidents: Incident[] = [];
+  private notifications: Notification[] = [];
+  private logAnalyses: LogAnalysis[] = [];
+  private nextId = 1;
+
+  async getSystems(): Promise<System[]> {
+    return [...this.systems].sort((a, b) =>
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  }
+
+  async getSystemById(id: number): Promise<System | undefined> {
+    return this.systems.find(s => s.id === id);
+  }
+
+  async createSystem(data: InsertSystem): Promise<System> {
+    const system: System = {
+      id: this.nextId++,
+      ...data,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    } as System;
+    this.systems.push(system);
+    return system;
+  }
+
+  async updateSystem(id: number, data: Partial<InsertSystem>): Promise<System | undefined> {
+    const index = this.systems.findIndex(s => s.id === id);
+    if (index === -1) return undefined;
+    this.systems[index] = {
+      ...this.systems[index],
+      ...data,
+      updatedAt: new Date()
+    } as System;
+    return this.systems[index];
+  }
+
+  async deleteSystem(id: number): Promise<boolean> {
+    const index = this.systems.findIndex(s => s.id === id);
+    if (index === -1) return false;
+    this.systems.splice(index, 1);
+    return true;
+  }
+
+  async updateSystemStatus(id: number, status: string): Promise<void> {
+    await this.updateSystem(id, { status });
+  }
+
+  async getContacts(): Promise<Contact[]> {
+    return [...this.contacts];
+  }
+
+  async getContactById(id: number): Promise<Contact | undefined> {
+    return this.contacts.find(c => c.id === id);
+  }
+
+  async createContact(data: InsertContact): Promise<Contact> {
+    const contact: Contact = {
+      id: this.nextId++,
+      ...data,
+      createdAt: new Date()
+    } as Contact;
+    this.contacts.push(contact);
+    return contact;
+  }
+
+  async updateContact(id: number, data: Partial<InsertContact>): Promise<Contact | undefined> {
+    const index = this.contacts.findIndex(c => c.id === id);
+    if (index === -1) return undefined;
+    this.contacts[index] = { ...this.contacts[index], ...data } as Contact;
+    return this.contacts[index];
+  }
+
+  async deleteContact(id: number): Promise<boolean> {
+    const index = this.contacts.findIndex(c => c.id === id);
+    if (index === -1) return false;
+    this.contacts.splice(index, 1);
+    return true;
+  }
+
+  async getGroups(): Promise<Group[]> {
+    return [...this.groups];
+  }
+
+  async getGroupById(id: number): Promise<Group | undefined> {
+    return this.groups.find(g => g.id === id);
+  }
+
+  async createGroup(data: InsertGroup): Promise<Group> {
+    const group: Group = {
+      id: this.nextId++,
+      ...data,
+      createdAt: new Date()
+    } as Group;
+    this.groups.push(group);
+    return group;
+  }
+
+  async updateGroup(id: number, data: Partial<InsertGroup>): Promise<Group | undefined> {
+    const index = this.groups.findIndex(g => g.id === id);
+    if (index === -1) return undefined;
+    this.groups[index] = { ...this.groups[index], ...data } as Group;
+    return this.groups[index];
+  }
+
+  async deleteGroup(id: number): Promise<boolean> {
+    const index = this.groups.findIndex(g => g.id === id);
+    if (index === -1) return false;
+    this.groups.splice(index, 1);
+    return true;
+  }
+
+  async getAlertRules(): Promise<AlertRule[]> {
+    return [...this.alertRules];
+  }
+
+  async getAlertRuleById(id: number): Promise<AlertRule | undefined> {
+    return this.alertRules.find(r => r.id === id);
+  }
+
+  async createAlertRule(data: InsertAlertRule): Promise<AlertRule> {
+    const rule: AlertRule = {
+      id: this.nextId++,
+      ...data,
+      createdAt: new Date()
+    } as AlertRule;
+    this.alertRules.push(rule);
+    return rule;
+  }
+
+  async updateAlertRule(id: number, data: Partial<InsertAlertRule>): Promise<AlertRule | undefined> {
+    const index = this.alertRules.findIndex(r => r.id === id);
+    if (index === -1) return undefined;
+    this.alertRules[index] = { ...this.alertRules[index], ...data } as AlertRule;
+    return this.alertRules[index];
+  }
+
+  async deleteAlertRule(id: number): Promise<boolean> {
+    const index = this.alertRules.findIndex(r => r.id === id);
+    if (index === -1) return false;
+    this.alertRules.splice(index, 1);
+    return true;
+  }
+
+  async getAlerts(): Promise<Alert[]> {
+    return [...this.alerts].sort((a, b) =>
+      new Date(b.triggeredAt).getTime() - new Date(a.triggeredAt).getTime()
+    );
+  }
+
+  async getActiveAlerts(): Promise<Alert[]> {
+    return this.alerts.filter(a => a.status === 'active');
+  }
+
+  async getAlertById(id: number): Promise<Alert | undefined> {
+    return this.alerts.find(a => a.id === id);
+  }
+
+  async createAlert(data: InsertAlert): Promise<Alert> {
+    const alert: Alert = {
+      id: this.nextId++,
+      ...data,
+      triggeredAt: new Date()
+    } as Alert;
+    this.alerts.push(alert);
+    return alert;
+  }
+
+  async acknowledgeAlert(id: number, acknowledgedBy: string): Promise<Alert | undefined> {
+    const index = this.alerts.findIndex(a => a.id === id);
+    if (index === -1) return undefined;
+    this.alerts[index] = {
+      ...this.alerts[index],
+      status: 'acknowledged',
+      acknowledgedBy,
+      acknowledgedAt: new Date()
+    } as Alert;
+    return this.alerts[index];
+  }
+
+  async resolveAlert(id: number, resolvedBy: string): Promise<Alert | undefined> {
+    const index = this.alerts.findIndex(a => a.id === id);
+    if (index === -1) return undefined;
+    this.alerts[index] = {
+      ...this.alerts[index],
+      status: 'resolved',
+      resolvedBy,
+      resolvedAt: new Date()
+    } as Alert;
+    return this.alerts[index];
+  }
+
+  async getSchedules(): Promise<Schedule[]> {
+    return [...this.schedules];
+  }
+
+  async getSchedulesByDate(date: string): Promise<Schedule[]> {
+    return this.schedules.filter(s => s.date === date);
+  }
+
+  async createSchedule(data: InsertSchedule): Promise<Schedule> {
+    const schedule: Schedule = {
+      id: this.nextId++,
+      ...data,
+      createdAt: new Date()
+    } as Schedule;
+    this.schedules.push(schedule);
+    return schedule;
+  }
+
+  async deleteSchedule(id: number): Promise<boolean> {
+    const index = this.schedules.findIndex(s => s.id === id);
+    if (index === -1) return false;
+    this.schedules.splice(index, 1);
+    return true;
+  }
+
+  async getIncidents(): Promise<Incident[]> {
+    return [...this.incidents].sort((a, b) =>
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  }
+
+  async getIncidentById(id: number): Promise<Incident | undefined> {
+    return this.incidents.find(i => i.id === id);
+  }
+
+  async createIncident(data: InsertIncident): Promise<Incident> {
+    const incident: Incident = {
+      id: this.nextId++,
+      ...data,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    } as Incident;
+    this.incidents.push(incident);
+    return incident;
+  }
+
+  async updateIncidentStatus(id: number, status: string, resolution?: string): Promise<Incident | undefined> {
+    const index = this.incidents.findIndex(i => i.id === id);
+    if (index === -1) return undefined;
+    this.incidents[index] = {
+      ...this.incidents[index],
+      status,
+      resolution,
+      updatedAt: new Date(),
+      ...(status === 'resolved' && { resolvedAt: new Date() })
+    } as Incident;
+    return this.incidents[index];
+  }
+
+  async assignIncident(id: number, assignedTo: string): Promise<Incident | undefined> {
+    const index = this.incidents.findIndex(i => i.id === id);
+    if (index === -1) return undefined;
+    this.incidents[index] = {
+      ...this.incidents[index],
+      assignedTo,
+      updatedAt: new Date()
+    } as Incident;
+    return this.incidents[index];
+  }
+
+  async getNotifications(): Promise<Notification[]> {
+    return [...this.notifications].sort((a, b) =>
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  }
+
+  async getNotificationsByIncident(incidentId: number): Promise<Notification[]> {
+    return this.notifications.filter(n => n.incidentId === incidentId);
+  }
+
+  async createNotification(data: InsertNotification): Promise<Notification> {
+    const notification: Notification = {
+      id: this.nextId++,
+      ...data,
+      createdAt: new Date()
+    } as Notification;
+    this.notifications.push(notification);
+    return notification;
+  }
+
+  async updateNotificationStatus(id: number, status: string, sentAt?: Date, error?: string): Promise<void> {
+    const index = this.notifications.findIndex(n => n.id === id);
+    if (index !== -1) {
+      this.notifications[index] = {
+        ...this.notifications[index],
+        status,
+        sentAt,
+        error
+      } as Notification;
+    }
+  }
+
+  async getLogAnalysis(): Promise<LogAnalysis[]> {
+    return [...this.logAnalyses].sort((a, b) =>
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  }
+
+  async createLogAnalysis(data: InsertLogAnalysis): Promise<LogAnalysis> {
+    const analysis: LogAnalysis = {
+      id: this.nextId++,
+      ...data,
+      createdAt: new Date()
+    } as LogAnalysis;
+    this.logAnalyses.push(analysis);
+    return analysis;
+  }
 }
 
 export class DatabaseStorage implements IStorage {
@@ -312,4 +633,8 @@ export class DatabaseStorage implements IStorage {
   }
 }
 
-export const storage = new DatabaseStorage();
+// Sử dụng InMemoryStorage thay vì DatabaseStorage (không cần database)
+export const storage = new InMemoryStorage();
+
+// Nếu muốn dùng database, uncomment dòng dưới và comment dòng trên:
+// export const storage = new DatabaseStorage();
