@@ -1,0 +1,38 @@
+# Dockerfile cho Backend API - chỉ chạy Express server
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
+RUN npm install --no-audit --no-fund
+
+# Copy source code
+COPY . .
+
+# Build backend only
+RUN npx esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist
+
+# Production stage
+FROM node:20-alpine
+
+ENV NODE_ENV=production
+
+WORKDIR /app
+
+# Copy package files
+COPY package.json package-lock.json ./
+
+# Copy built backend
+COPY --from=builder /app/dist ./dist
+
+# Copy node_modules (cần cho external packages)
+COPY --from=builder /app/node_modules ./node_modules
+
+# Expose port
+EXPOSE 8002
+
+# Start backend
+CMD ["node", "dist/index.js"]

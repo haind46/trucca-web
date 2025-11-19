@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Pencil, Trash2, Search, Copy, Upload, Download, FileDown, Shield } from "lucide-react";
 import { fetchWithAuth } from "@/lib/api";
+import { API_ENDPOINTS, getApiUrl } from "@/lib/api-endpoints";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -109,7 +110,7 @@ export default function ConfigRoles() {
         params.append("keyword", keyword);
       }
 
-      const response = await fetchWithAuth(`http://localhost:8002/api/roles/?${params}`);
+      const response = await fetchWithAuth(getApiUrl(API_ENDPOINTS.ROLES.LIST, Object.fromEntries(params)));
 
       if (!response.ok) {
         throw new Error("Failed to fetch roles");
@@ -123,7 +124,7 @@ export default function ConfigRoles() {
   // Create mutation
   const createMutation = useMutation({
     mutationFn: async (data: RoleFormData) => {
-      const response = await fetchWithAuth("http://localhost:8002/api/roles/create", {
+      const response = await fetchWithAuth(API_ENDPOINTS.ROLES.CREATE, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
@@ -150,7 +151,7 @@ export default function ConfigRoles() {
   // Update mutation
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: RoleFormData }) => {
-      const response = await fetchWithAuth(`http://localhost:8002/api/roles/edit?id=${id}`, {
+      const response = await fetchWithAuth(getApiUrl(API_ENDPOINTS.ROLES.UPDATE, { id }), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
@@ -178,7 +179,7 @@ export default function ConfigRoles() {
   // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      const response = await fetchWithAuth(`http://localhost:8002/api/roles/delete/${id}`, {
+      const response = await fetchWithAuth(API_ENDPOINTS.ROLES.DELETE(id), {
         method: "DELETE",
       });
 
@@ -204,7 +205,7 @@ export default function ConfigRoles() {
   const bulkDeleteMutation = useMutation({
     mutationFn: async (ids: number[]) => {
       const response = await fetchWithAuth(
-        `http://localhost:8002/api/roles/delete?ids=${ids.join(",")}`,
+        getApiUrl(API_ENDPOINTS.ROLES.DELETE, { ids: ids.join(",") }),
         { method: "POST" }
       );
 
@@ -243,7 +244,7 @@ export default function ConfigRoles() {
       const formData = new FormData();
       formData.append("file", file);
 
-      const response = await fetchWithAuth("http://localhost:8002/api/roles/import", {
+      const response = await fetchWithAuth(API_ENDPOINTS.ROLES.IMPORT, {
         method: "POST",
         body: formData,
       });
@@ -340,7 +341,7 @@ export default function ConfigRoles() {
 
   const handleExport = async () => {
     try {
-      const response = await fetchWithAuth("http://localhost:8002/api/roles/export");
+      const response = await fetchWithAuth(API_ENDPOINTS.ROLES.EXPORT);
 
       if (!response.ok) {
         throw new Error("Failed to export");
@@ -372,7 +373,7 @@ export default function ConfigRoles() {
 
   const handleDownloadTemplate = async () => {
     try {
-      const response = await fetchWithAuth("http://localhost:8002/api/roles/template");
+      const response = await fetchWithAuth(API_ENDPOINTS.ROLES.TEMPLATE);
 
       if (!response.ok) {
         throw new Error("Failed to download template");

@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { API_ENDPOINTS } from "@/lib/api-endpoints";
 import { useLocation } from "wouter";
 import { setLogoutCallback } from "./api";
 
@@ -35,7 +36,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       // Call logout API if refresh token exists
       if (refreshToken) {
-        await fetch("/api/auth/logout", {
+        await fetch(API_ENDPOINTS.AUTH.LOGOUT, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

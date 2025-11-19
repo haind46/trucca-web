@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { API_ENDPOINTS } from "@/lib/api-endpoints";
 import { AlertRow } from "@/components/AlertRow";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -23,11 +24,11 @@ export default function Alerts() {
   const [severityFilter, setSeverityFilter] = useState("all");
 
   const { data: alerts = [], isLoading: alertsLoading } = useQuery<Alert[]>({
-    queryKey: ["/api/alerts"],
+    queryKey: [API_ENDPOINTS.ALERTS.LIST],
   });
 
   const { data: systems = [], isLoading: systemsLoading } = useQuery<System[]>({
-    queryKey: ["/api/systems"],
+    queryKey: [API_ENDPOINTS.SYSTEMS.LIST],
   });
 
   const acknowledgeMutation = useMutation({
@@ -37,7 +38,7 @@ export default function Alerts() {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/alerts"] });
+      queryClient.invalidateQueries({ queryKey: [API_ENDPOINTS.ALERTS.LIST] });
       queryClient.invalidateQueries({ queryKey: ["/api/alerts/active"] });
       queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
     },

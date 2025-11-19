@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Pencil, Trash2, Search, Copy, Upload, Download, FileDown } from "lucide-react";
 import { fetchWithAuth } from "@/lib/api";
+import { API_ENDPOINTS, getApiUrl } from "@/lib/api-endpoints";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -149,7 +150,7 @@ export default function UserGroupManagement() {
       }
 
       const response = await fetchWithAuth(
-        `http://localhost:8002/api/sys-groups?${params.toString()}`
+        getApiUrl(API_ENDPOINTS.SYS_GROUPS.LIST, Object.fromEntries(params))
       );
 
       if (!response.ok) {
@@ -213,7 +214,7 @@ export default function UserGroupManagement() {
   const createMutation = useMutation({
     mutationFn: async (data: GroupFormData) => {
       const response = await fetchWithAuth(
-        "http://localhost:8002/api/sys-groups/create",
+        API_ENDPOINTS.SYS_GROUPS.CREATE,
         {
           method: "POST",
           headers: {
@@ -252,7 +253,7 @@ export default function UserGroupManagement() {
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: GroupFormData }) => {
       const response = await fetchWithAuth(
-        `http://localhost:8002/api/sys-groups/update/${id}`,
+        API_ENDPOINTS.SYS_GROUPS.UPDATE(id),
         {
           method: "PUT",
           headers: {
@@ -291,7 +292,7 @@ export default function UserGroupManagement() {
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
       const response = await fetchWithAuth(
-        `http://localhost:8002/api/sys-groups/delete/${id}`,
+        API_ENDPOINTS.SYS_GROUPS.DELETE(id),
         {
           method: "DELETE",
         }
@@ -326,7 +327,7 @@ export default function UserGroupManagement() {
   const bulkDeleteMutation = useMutation({
     mutationFn: async (ids: number[]) => {
       const response = await fetchWithAuth(
-        `http://localhost:8002/api/sys-groups/delete?ids=${ids.join(",")}`,
+        getApiUrl(API_ENDPOINTS.SYS_GROUPS.DELETE, { ids: ids.join(",") }),
         {
           method: "POST",
         }
@@ -375,7 +376,7 @@ export default function UserGroupManagement() {
       });
 
       const response = await fetchWithAuth(
-        `http://localhost:8002/api/sys-groups/copy?${params.toString()}`,
+        getApiUrl(API_ENDPOINTS.SYS_GROUPS.COPY, Object.fromEntries(params)),
         {
           method: "POST",
         }
@@ -413,7 +414,7 @@ export default function UserGroupManagement() {
       formData.append("file", file);
 
       const response = await fetchWithAuth(
-        "http://localhost:8002/api/sys-groups/import",
+        API_ENDPOINTS.SYS_GROUPS.IMPORT,
         {
           method: "POST",
           body: formData,
@@ -519,7 +520,7 @@ export default function UserGroupManagement() {
   const handleExport = async () => {
     try {
       const response = await fetchWithAuth(
-        "http://localhost:8002/api/sys-groups/export"
+        API_ENDPOINTS.SYS_GROUPS.EXPORT
       );
 
       if (!response.ok) {
@@ -553,7 +554,7 @@ export default function UserGroupManagement() {
   const handleDownloadTemplate = async () => {
     try {
       const response = await fetchWithAuth(
-        "http://localhost:8002/api/sys-groups/import-template"
+        API_ENDPOINTS.SYS_GROUPS.IMPORT_TEMPLATE
       );
 
       if (!response.ok) {

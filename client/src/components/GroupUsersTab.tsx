@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Users, ExternalLink } from "lucide-react";
 import { fetchWithAuth } from "@/lib/api";
+import { API_ENDPOINTS, getApiUrl } from "@/lib/api-endpoints";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -58,7 +59,7 @@ export function GroupUsersTab({ groupId, groupName }: GroupUsersTabProps) {
     queryKey: ["group-users", groupId, page, limit],
     queryFn: async () => {
       const response = await fetchWithAuth(
-        `http://localhost:8002/api/user-groups/group/${groupId}?page=${page}&limit=${limit}`
+        getApiUrl(API_ENDPOINTS.USER_GROUPS.BY_GROUP(groupId), { page, limit })
       );
 
       if (!response.ok) {

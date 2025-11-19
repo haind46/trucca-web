@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { API_ENDPOINTS } from "@/lib/api-endpoints";
 import { Button } from "@/components/ui/button";
 import { SystemForm } from "@/components/SystemForm";
 import { Plus, Settings, Trash2 } from "lucide-react";
@@ -33,15 +34,15 @@ export default function ConfigSystems() {
   const { toast } = useToast();
 
   const { data: systems = [], isLoading } = useQuery<System[]>({
-    queryKey: ["/api/systems"],
+    queryKey: [API_ENDPOINTS.SYSTEMS.LIST],
   });
 
   const createMutation = useMutation({
     mutationFn: async (data: InsertSystem) => {
-      return await apiRequest("POST", "/api/systems", data);
+      return await apiRequest("POST", API_ENDPOINTS.SYSTEMS.LIST, data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/systems"] });
+      queryClient.invalidateQueries({ queryKey: [API_ENDPOINTS.SYSTEMS.LIST] });
       toast({
         title: "Thành công",
         description: "Hệ thống đã được thêm mới",
@@ -62,7 +63,7 @@ export default function ConfigSystems() {
       return await apiRequest("PATCH", `/api/systems/${id}`, data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/systems"] });
+      queryClient.invalidateQueries({ queryKey: [API_ENDPOINTS.SYSTEMS.LIST] });
       toast({
         title: "Thành công",
         description: "Hệ thống đã được cập nhật",
@@ -83,7 +84,7 @@ export default function ConfigSystems() {
       return await apiRequest("DELETE", `/api/systems/${id}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/systems"] });
+      queryClient.invalidateQueries({ queryKey: [API_ENDPOINTS.SYSTEMS.LIST] });
       toast({
         title: "Thành công",
         description: "Hệ thống đã được xóa",

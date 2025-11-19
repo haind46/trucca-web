@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Pencil, Trash2, Search, Copy, Upload, Download, FileDown, Bell } from "lucide-react";
 import { fetchWithAuth } from "@/lib/api";
+import { API_ENDPOINTS, getApiUrl } from "@/lib/api-endpoints";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -108,7 +109,7 @@ export default function ConfigAlertFrequency() {
         params.append("keyword", keyword);
       }
 
-      const response = await fetchWithAuth(`http://localhost:8002/api/alert_frequency/?${params}`);
+      const response = await fetchWithAuth(getApiUrl(API_ENDPOINTS.ALERT_FREQUENCY.LIST, Object.fromEntries(params)));
 
       if (!response.ok) {
         throw new Error("Failed to fetch alert frequencies");
@@ -122,7 +123,7 @@ export default function ConfigAlertFrequency() {
   // Create mutation
   const createMutation = useMutation({
     mutationFn: async (data: AlertFrequencyFormData) => {
-      const response = await fetchWithAuth("http://localhost:8002/api/alert_frequency/create", {
+      const response = await fetchWithAuth(API_ENDPOINTS.ALERT_FREQUENCY.CREATE, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
@@ -149,7 +150,7 @@ export default function ConfigAlertFrequency() {
   // Update mutation
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: AlertFrequencyFormData }) => {
-      const response = await fetchWithAuth(`http://localhost:8002/api/alert_frequency/edit?id=${id}`, {
+      const response = await fetchWithAuth(getApiUrl(API_ENDPOINTS.ALERT_FREQUENCY.UPDATE, { id }), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
@@ -177,7 +178,7 @@ export default function ConfigAlertFrequency() {
   // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      const response = await fetchWithAuth(`http://localhost:8002/api/alert_frequency/delete/${id}`, {
+      const response = await fetchWithAuth(API_ENDPOINTS.ALERT_FREQUENCY.DELETE(id), {
         method: "DELETE",
       });
 
@@ -203,7 +204,7 @@ export default function ConfigAlertFrequency() {
   const bulkDeleteMutation = useMutation({
     mutationFn: async (ids: number[]) => {
       const response = await fetchWithAuth(
-        `http://localhost:8002/api/alert_frequency/delete?ids=${ids.join(",")}`,
+        getApiUrl(API_ENDPOINTS.ALERT_FREQUENCY.DELETE, { ids: ids.join(",") }),
         { method: "POST" }
       );
 
@@ -242,7 +243,7 @@ export default function ConfigAlertFrequency() {
       const formData = new FormData();
       formData.append("file", file);
 
-      const response = await fetchWithAuth("http://localhost:8002/api/alert_frequency/import", {
+      const response = await fetchWithAuth(API_ENDPOINTS.ALERT_FREQUENCY.IMPORT, {
         method: "POST",
         body: formData,
       });
@@ -357,7 +358,7 @@ export default function ConfigAlertFrequency() {
 
   const handleExport = async () => {
     try {
-      const response = await fetchWithAuth("http://localhost:8002/api/alert_frequency/export");
+      const response = await fetchWithAuth(API_ENDPOINTS.ALERT_FREQUENCY.EXPORT);
 
       if (!response.ok) {
         throw new Error("Failed to export");
@@ -389,7 +390,7 @@ export default function ConfigAlertFrequency() {
 
   const handleDownloadTemplate = async () => {
     try {
-      const response = await fetchWithAuth("http://localhost:8002/api/alert_frequency/template");
+      const response = await fetchWithAuth(API_ENDPOINTS.ALERT_FREQUENCY.TEMPLATE);
 
       if (!response.ok) {
         throw new Error("Failed to download template");

@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Pencil, Trash2, Search, Copy, Upload, Download, FileDown, Shield, Users } from "lucide-react";
 import { fetchWithAuth } from "@/lib/api";
+import { API_ENDPOINTS, getApiUrl } from "@/lib/api-endpoints";
 import { departmentService } from "@/services/departmentService";
 import { UserGroupsDialog } from "@/components/UserGroupsDialog";
 import { Button } from "@/components/ui/button";
@@ -158,7 +159,7 @@ export default function UserManagement() {
     queryKey: ["all-groups"],
     queryFn: async () => {
       const response = await fetchWithAuth(
-        "http://localhost:8002/api/sys-groups?page=1&limit=100&sort_dir=asc&sort_key=name"
+        getApiUrl(API_ENDPOINTS.SYS_GROUPS.LIST, { page: 1, limit: 100, sort_dir: 'asc', sort_key: 'name' })
       );
 
       if (!response.ok) {
@@ -174,18 +175,18 @@ export default function UserManagement() {
   const { data, isLoading } = useQuery({
     queryKey: ["users", page, limit, keyword],
     queryFn: async () => {
-      const params = new URLSearchParams({
+      const params: Record<string, any> = {
         page: page.toString(),
         limit: limit.toString(),
         sort_dir: "desc",
         sort_key: "createdAt",
-      });
+      };
       if (keyword) {
-        params.append("keyword", keyword);
+        params.keyword = keyword;
       }
 
-      console.log("🔍 Fetching users with params:", params.toString());
-      const response = await fetchWithAuth(`http://localhost:8002/api/users?${params}`);
+      console.log("🔍 Fetching users with params:", params);
+      const response = await fetchWithAuth(getApiUrl(API_ENDPOINTS.USERS.LIST, params));
 
       if (!response.ok) {
         throw new Error("Failed to fetch users");
@@ -204,7 +205,7 @@ export default function UserManagement() {
       console.log("📝 Creating user with data:", userData);
 
       // Backend v2.1 now supports groupIds in create request
-      const response = await fetchWithAuth("http://localhost:8002/api/users/create", {
+      const response = await fetchWithAuth(API_ENDPOINTS.USERS.CREATE, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -248,7 +249,7 @@ export default function UserManagement() {
       console.log("✏️ User data with groups:", userData);
 
       // Backend v2.1 now supports groupIds in edit request
-      const response = await fetchWithAuth(`http://localhost:8002/api/users/edit?id=${id}`, {
+      const response = await fetchWithAuth(getApiUrl(API_ENDPOINTS.USERS.UPDATE, { id }), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -288,7 +289,7 @@ export default function UserManagement() {
   // Delete user mutation
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const response = await fetchWithAuth(`http://localhost:8002/api/users/delete?ids=${id}`, {
+      const response = await fetchWithAuth(getApiUrl(API_ENDPOINTS.USERS.DELETE, { ids: id }), {
         method: "POST",
       });
 
@@ -387,7 +388,7 @@ export default function UserManagement() {
   // Bulk delete mutation
   const bulkDeleteMutation = useMutation({
     mutationFn: async (ids: string[]) => {
-      const response = await fetchWithAuth(`http://localhost:8002/api/users/delete?ids=${ids.join(",")}`, {
+      const response = await fetchWithAuth(getApiUrl(API_ENDPOINTS.USERS.DELETE, { ids: ids.join(",") }), {
         method: "POST",
       });
 
@@ -418,7 +419,7 @@ export default function UserManagement() {
   // Export mutation
   const exportMutation = useMutation({
     mutationFn: async () => {
-      const response = await fetchWithAuth("http://localhost:8002/api/users/export", {
+      const response = await fetchWithAuth(API_ENDPOINTS.USERS.EXPORT, {
         method: "GET",
       });
 
@@ -457,7 +458,7 @@ export default function UserManagement() {
       const formData = new FormData();
       formData.append("file", file);
 
-      const response = await fetchWithAuth("http://localhost:8002/api/users/import", {
+      const response = await fetchWithAuth(API_ENDPOINTS.USERS.IMPORT, {
         method: "POST",
         body: formData,
       });
@@ -522,7 +523,7 @@ export default function UserManagement() {
   // Copy user mutation using API endpoint
   const copyUserMutation = useMutation({
     mutationFn: async ({ sourceUserId, newUsername }: { sourceUserId: string; newUsername: string }) => {
-      const response = await fetchWithAuth(`http://localhost:8002/api/users/copy?sourceUserId=${sourceUserId}&newUsername=${newUsername}`, {
+      const response = await fetchWithAuth(getApiUrl(API_ENDPOINTS.USERS.COPY, { sourceUserId, newUsername }), {
         method: "POST",
       });
 
@@ -583,7 +584,7 @@ export default function UserManagement() {
 
   const handleDownloadTemplate = async () => {
     try {
-      const response = await fetchWithAuth("http://localhost:8002/api/users/import-template");
+      const response = await fetchWithAuth(API_ENDPOINTS.USERS.IMPORT_TEMPLATE);
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");

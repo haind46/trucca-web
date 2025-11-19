@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Pencil, Trash2, Search, Copy, Upload, Download, FileDown, Settings2 } from "lucide-react";
 import { fetchWithAuth } from "@/lib/api";
+import { API_ENDPOINTS, getApiUrl } from "@/lib/api-endpoints";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -100,7 +101,7 @@ export default function ConfigSystemLevel() {
         params.append("keyword", keyword);
       }
 
-      const response = await fetchWithAuth(`http://localhost:8002/api/systemLevel/?${params}`);
+      const response = await fetchWithAuth(getApiUrl(API_ENDPOINTS.SYSTEM_LEVEL.LIST, Object.fromEntries(params)));
 
       if (!response.ok) {
         throw new Error("Failed to fetch system levels");
@@ -114,7 +115,7 @@ export default function ConfigSystemLevel() {
   // Create mutation
   const createMutation = useMutation({
     mutationFn: async (data: SystemLevelFormData) => {
-      const response = await fetchWithAuth("http://localhost:8002/api/systemLevel/create", {
+      const response = await fetchWithAuth(API_ENDPOINTS.SYSTEM_LEVEL.CREATE, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...data, createdBy: "admin" }),
@@ -141,7 +142,7 @@ export default function ConfigSystemLevel() {
   // Update mutation
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: SystemLevelFormData }) => {
-      const response = await fetchWithAuth(`http://localhost:8002/api/systemLevel/edit?id=${id}`, {
+      const response = await fetchWithAuth(getApiUrl(API_ENDPOINTS.SYSTEM_LEVEL.UPDATE, { id }), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...data, updatedBy: "admin" }),
@@ -169,7 +170,7 @@ export default function ConfigSystemLevel() {
   // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      const response = await fetchWithAuth(`http://localhost:8002/api/systemLevel/delete/${id}`, {
+      const response = await fetchWithAuth(API_ENDPOINTS.SYSTEM_LEVEL.DELETE(id), {
         method: "DELETE",
       });
 
@@ -195,7 +196,7 @@ export default function ConfigSystemLevel() {
   const bulkDeleteMutation = useMutation({
     mutationFn: async (ids: number[]) => {
       const response = await fetchWithAuth(
-        `http://localhost:8002/api/systemLevel/delete?ids=${ids.join(",")}`,
+        getApiUrl(API_ENDPOINTS.SYSTEM_LEVEL.DELETE, { ids: ids.join(",") }),
         { method: "POST" }
       );
 
@@ -224,7 +225,7 @@ export default function ConfigSystemLevel() {
       const formData = new FormData();
       formData.append("file", file);
 
-      const response = await fetchWithAuth("http://localhost:8002/api/systemLevel/import", {
+      const response = await fetchWithAuth(API_ENDPOINTS.SYSTEM_LEVEL.IMPORT, {
         method: "POST",
         body: formData,
       });
@@ -328,7 +329,7 @@ export default function ConfigSystemLevel() {
 
   const handleExport = async () => {
     try {
-      const response = await fetchWithAuth("http://localhost:8002/api/systemLevel/export");
+      const response = await fetchWithAuth(API_ENDPOINTS.SYSTEM_LEVEL.EXPORT);
 
       if (!response.ok) {
         throw new Error("Failed to export");
@@ -360,7 +361,7 @@ export default function ConfigSystemLevel() {
 
   const handleDownloadTemplate = async () => {
     try {
-      const response = await fetchWithAuth("http://localhost:8002/api/systemLevel/template");
+      const response = await fetchWithAuth(API_ENDPOINTS.SYSTEM_LEVEL.TEMPLATE);
 
       if (!response.ok) {
         throw new Error("Failed to download template");

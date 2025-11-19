@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  trucca-web:
+    build:
+      context: .
+      dockerfile: Dockerfile.no-proxy
+      # KHÔNG dùng proxy cho build
+    container_name: trucca-web
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      # Runtime environment - KHÔNG dùng proxy
+      - NODE_ENV=production
+      - PORT=3000
+      # Database connection (nếu có)
+      # - DATABASE_URL=${DATABASE_URL}
+    env_file:
+      - .env.production
+    networks:
+      - trucca-network
+    volumes:
+      # Mount logs nếu cần
+      - ./logs:/app/logs
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Database service (nếu dùng PostgreSQL local)
+  # db:
+  #   image: postgres:15-alpine
+  #   container_name: trucca-db
+  #   restart: unless-stopped
+  #   environment:
+  #     - POSTGRES_DB=trucca
+  #     - POSTGRES_USER=trucca_user
+  #     - POSTGRES_PASSWORD=${DB_PASSWORD}
+  #   volumes:
+  #     - db-data:/var/lib/postgresql/data
+  #     - ./db:/docker-entrypoint-initdb.d
+  #   networks:
+  #     - trucca-network
+  #   ports:
+  #     - "5432:5432"
+
+networks:
+  trucca-network:
+    driver: bridge
+
+# volumes:
+#   db-data:

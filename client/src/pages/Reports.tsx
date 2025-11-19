@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { API_ENDPOINTS } from "@/lib/api-endpoints";
 import { Button } from "@/components/ui/button";
 import { Download, FileText, TrendingUp } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -7,7 +8,7 @@ import type { Incident } from "@shared/schema";
 
 export default function Reports() {
   const { data: incidents = [], isLoading } = useQuery<Incident[]>({
-    queryKey: ["/api/incidents"],
+    queryKey: [API_ENDPOINTS.INCIDENTS.LIST],
   });
 
   const today = new Date().toDateString();

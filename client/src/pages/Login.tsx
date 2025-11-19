@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { API_ENDPOINTS } from "@/lib/api-endpoints";
 import { useLocation } from "wouter";
 import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -25,7 +26,7 @@ export default function Login() {
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: { username: string; password: string }) => {
-      const response = await fetch("/api/auth/login", {
+      const response = await fetch(API_ENDPOINTS.AUTH.LOGIN, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

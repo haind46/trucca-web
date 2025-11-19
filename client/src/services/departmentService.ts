@@ -2,6 +2,7 @@
 // Based on API_Department.md v2.0
 
 import { fetchWithAuth } from '@/lib/api';
+import { API_ENDPOINTS, getApiUrl } from '@/lib/api-endpoints';
 import type {
   Department,
   DepartmentRequest,
@@ -10,22 +11,12 @@ import type {
   DepartmentQueryParams,
 } from '@/types/department';
 
-const BASE_URL = 'http://localhost:8002/api/department';
-
 export const departmentService = {
   /**
    * Get all departments with pagination and filtering
    */
   getAll: async (params?: DepartmentQueryParams): Promise<DepartmentApiResponse<PaginatedDepartments>> => {
-    const queryParams = new URLSearchParams();
-
-    if (params?.page) queryParams.append('page', params.page.toString());
-    if (params?.limit) queryParams.append('limit', params.limit.toString());
-    if (params?.keyword) queryParams.append('keyword', params.keyword);
-    if (params?.sort_dir) queryParams.append('sort_dir', params.sort_dir);
-    if (params?.sort_key) queryParams.append('sort_key', params.sort_key);
-
-    const url = queryParams.toString() ? `${BASE_URL}?${queryParams}` : BASE_URL;
+    const url = params ? getApiUrl(API_ENDPOINTS.DEPARTMENTS.LIST, params as any) : API_ENDPOINTS.DEPARTMENTS.LIST;
     const response = await fetchWithAuth(url);
 
     if (!response.ok) {
@@ -39,7 +30,7 @@ export const departmentService = {
    * Create a new department
    */
   create: async (data: DepartmentRequest): Promise<DepartmentApiResponse<Department>> => {
-    const response = await fetchWithAuth(`${BASE_URL}/create`, {
+    const response = await fetchWithAuth(API_ENDPOINTS.DEPARTMENTS.CREATE, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -59,7 +50,7 @@ export const departmentService = {
    * Update an existing department
    */
   update: async (id: number, data: Partial<DepartmentRequest>): Promise<DepartmentApiResponse<Department>> => {
-    const response = await fetchWithAuth(`${BASE_URL}/edit?id=${id}`, {
+    const response = await fetchWithAuth(getApiUrl(API_ENDPOINTS.DEPARTMENTS.UPDATE, { id }), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -79,7 +70,7 @@ export const departmentService = {
    * Delete one or more departments
    */
   delete: async (ids: number[]): Promise<DepartmentApiResponse<null>> => {
-    const response = await fetchWithAuth(`${BASE_URL}/delete?ids=${ids.join(',')}`, {
+    const response = await fetchWithAuth(getApiUrl(API_ENDPOINTS.DEPARTMENTS.DELETE, { ids: ids.join(',') }), {
       method: 'POST',
     });
 
@@ -95,16 +86,7 @@ export const departmentService = {
    * Export departments to Excel
    */
   exportToExcel: async (params?: DepartmentQueryParams): Promise<Blob> => {
-    const queryParams = new URLSearchParams();
-
-    if (params?.keyword) queryParams.append('keyword', params.keyword);
-    if (params?.sort_dir) queryParams.append('sort_dir', params.sort_dir);
-    if (params?.sort_key) queryParams.append('sort_key', params.sort_key);
-
-    const url = queryParams.toString()
-      ? `${BASE_URL}/export?${queryParams}`
-      : `${BASE_URL}/export`;
-
+    const url = params ? getApiUrl(API_ENDPOINTS.DEPARTMENTS.EXPORT, params as any) : API_ENDPOINTS.DEPARTMENTS.EXPORT;
     const response = await fetchWithAuth(url);
 
     if (!response.ok) {
@@ -121,7 +103,7 @@ export const departmentService = {
     const formData = new FormData();
     formData.append('file', file);
 
-    const response = await fetchWithAuth(`${BASE_URL}/import`, {
+    const response = await fetchWithAuth(API_ENDPOINTS.DEPARTMENTS.IMPORT, {
       method: 'POST',
       body: formData,
     });
@@ -138,7 +120,7 @@ export const departmentService = {
    * Download import template Excel file
    */
   downloadTemplate: async (): Promise<Blob> => {
-    const response = await fetchWithAuth(`${BASE_URL}/import-template`);
+    const response = await fetchWithAuth(API_ENDPOINTS.DEPARTMENTS.IMPORT_TEMPLATE);
 
     if (!response.ok) {
       throw new Error('Failed to download template');

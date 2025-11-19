@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Shield, X } from "lucide-react";
 import { fetchWithAuth } from "@/lib/api";
+import { API_ENDPOINTS, getApiUrl } from "@/lib/api-endpoints";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -45,7 +46,7 @@ export function UserGroupsDialog({
     queryKey: ["all-groups"],
     queryFn: async () => {
       const response = await fetchWithAuth(
-        "http://localhost:8002/api/sys-groups?page=1&limit=100&sort_dir=asc&sort_key=name"
+        getApiUrl(API_ENDPOINTS.SYS_GROUPS.LIST, { page: 1, limit: 100, sort_dir: 'asc', sort_key: 'name' })
       );
 
       if (!response.ok) {
@@ -65,7 +66,7 @@ export function UserGroupsDialog({
       if (!userId) return [];
 
       const response = await fetchWithAuth(
-        `http://localhost:8002/api/users/${userId}/groups`
+        API_ENDPOINTS.USERS.GROUPS(userId)
       );
 
       if (!response.ok) {
@@ -95,7 +96,7 @@ export function UserGroupsDialog({
       if (!userId) throw new Error("User ID is required");
 
       const response = await fetchWithAuth(
-        `http://localhost:8002/api/users/${userId}/groups`,
+        API_ENDPOINTS.USERS.GROUPS(userId),
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },

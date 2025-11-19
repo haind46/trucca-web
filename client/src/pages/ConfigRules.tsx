@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { API_ENDPOINTS } from "@/lib/api-endpoints";
 import { Button } from "@/components/ui/button";
 import { AlertRuleForm } from "@/components/AlertRuleForm";
 import { Plus, Trash2 } from "lucide-react";
@@ -33,15 +34,15 @@ export default function ConfigRules() {
   const { toast } = useToast();
 
   const { data: rules = [], isLoading } = useQuery<AlertRule[]>({
-    queryKey: ["/api/rules"],
+    queryKey: [API_ENDPOINTS.RULES.LIST],
   });
 
   const createMutation = useMutation({
     mutationFn: async (data: InsertAlertRule) => {
-      return await apiRequest("POST", "/api/rules", data);
+      return await apiRequest("POST", API_ENDPOINTS.RULES.LIST, data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/rules"] });
+      queryClient.invalidateQueries({ queryKey: [API_ENDPOINTS.RULES.LIST] });
       setOpen(false);
       toast({
         title: "Thành công",
@@ -62,7 +63,7 @@ export default function ConfigRules() {
       return await apiRequest("DELETE", `/api/rules/${id}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/rules"] });
+      queryClient.invalidateQueries({ queryKey: [API_ENDPOINTS.RULES.LIST] });
       setDeleteDialogOpen(false);
       setRuleToDelete(null);
       toast({

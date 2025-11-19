@@ -1,0 +1,54 @@
+# Dependencies
+node_modules
+npm-debug.log
+yarn-error.log
+# package-lock.json - CẦN GIỮ LẠI cho npm ci
+yarn.lock
+
+# Development files
+.git
+.gitignore
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build artifacts (sẽ build lại trong Docker)
+dist
+build
+.cache
+
+# Logs
+logs
+*.log
+
+# Testing
+coverage
+.nyc_output
+
+# Documentation
+*.md
+!README.md
+docs
+
+# Replit specific
+.replit
+replit.md
+.local
+attached_assets
+
+# Others
+.claude
+test-api.html
+api-docs.json
+design_guidelines.md

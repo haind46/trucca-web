@@ -1,4 +1,5 @@
 import { MetricCard } from "@/components/MetricCard";
+import { API_ENDPOINTS } from "@/lib/api-endpoints";
 import { SystemCard } from "@/components/SystemCard";
 import { AlertRow } from "@/components/AlertRow";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,15 +22,15 @@ interface Stats {
 
 export default function Dashboard() {
   const { data: stats, isLoading: statsLoading } = useQuery<Stats>({
-    queryKey: ["/api/stats"],
+    queryKey: [API_ENDPOINTS.STATS.OVERVIEW],
   });
 
   const { data: systems = [], isLoading: systemsLoading } = useQuery<SystemWithAlertCount[]>({
-    queryKey: ["/api/systems"],
+    queryKey: [API_ENDPOINTS.SYSTEMS.LIST],
   });
 
   const { data: alerts = [], isLoading: alertsLoading } = useQuery<Alert[]>({
-    queryKey: ["/api/alerts/active"],
+    queryKey: [API_ENDPOINTS.ALERTS.ACTIVE],
   });
 
   const acknowledgeMutation = useMutation({
@@ -39,8 +40,8 @@ export default function Dashboard() {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/alerts/active"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
+      queryClient.invalidateQueries({ queryKey: [API_ENDPOINTS.ALERTS.ACTIVE] });
+      queryClient.invalidateQueries({ queryKey: [API_ENDPOINTS.STATS.OVERVIEW] });
     },
   });
 

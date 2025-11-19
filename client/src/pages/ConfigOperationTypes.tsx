@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { fetchWithAuth } from "@/lib/api";
+import { API_ENDPOINTS, getApiUrl } from "@/lib/api-endpoints";
 import { OperationTypeForm, type OperationTypeFormValues } from "@/components/OperationTypeForm";
 import {
   Plus,
@@ -79,7 +80,7 @@ interface ApiResponse {
 }
 
 // API Functions
-const BASE_URL = "http://localhost:8002/api/operation-type";
+const BASE_URL = API_ENDPOINTS.OPERATION_TYPES.LIST;
 
 const getAllOperationTypes = async (
   page: number,

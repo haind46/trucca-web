@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { API_ENDPOINTS } from "@/lib/api-endpoints";
 import { Button } from "@/components/ui/button";
 import { ContactForm } from "@/components/ContactForm";
 import { Plus, Mail, Phone, Trash2 } from "lucide-react";
@@ -32,15 +33,15 @@ export default function ConfigContacts() {
   const { toast } = useToast();
 
   const { data: contacts = [], isLoading } = useQuery<Contact[]>({
-    queryKey: ["/api/contacts"],
+    queryKey: [API_ENDPOINTS.CONTACTS.LIST],
   });
 
   const createMutation = useMutation({
     mutationFn: async (data: InsertContact) => {
-      return await apiRequest("POST", "/api/contacts", data);
+      return await apiRequest("POST", API_ENDPOINTS.CONTACTS.LIST, data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/contacts"] });
+      queryClient.invalidateQueries({ queryKey: [API_ENDPOINTS.CONTACTS.LIST] });
       setOpen(false);
       toast({
         title: "Thành công",
@@ -61,7 +62,7 @@ export default function ConfigContacts() {
       return await apiRequest("DELETE", `/api/contacts/${id}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/contacts"] });
+      queryClient.invalidateQueries({ queryKey: [API_ENDPOINTS.CONTACTS.LIST] });
       toast({
         title: "Thành công",
         description: "Đã xóa contact",

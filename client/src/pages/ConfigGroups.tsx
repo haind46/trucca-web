@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { API_ENDPOINTS } from "@/lib/api-endpoints";
 import { Button } from "@/components/ui/button";
 import { Plus, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -21,15 +22,15 @@ export default function ConfigGroups() {
   const { toast } = useToast();
 
   const { data: groups = [], isLoading } = useQuery<Group[]>({
-    queryKey: ["/api/groups"],
+    queryKey: [API_ENDPOINTS.GROUPS.LIST],
   });
 
   const createGroupMutation = useMutation({
     mutationFn: async (data: InsertGroup) => {
-      return await apiRequest("POST", "/api/groups", data);
+      return await apiRequest("POST", API_ENDPOINTS.GROUPS.LIST, data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/groups"] });
+      queryClient.invalidateQueries({ queryKey: [API_ENDPOINTS.GROUPS.LIST] });
       setDialogOpen(false);
       toast({
         title: "Thành công",

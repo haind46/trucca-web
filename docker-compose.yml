@@ -1,23 +1,23 @@
 version: '3.8'
 
 services:
+  # Frontend - Nginx serve static files + reverse proxy to backend
   trucca-web:
-    # Pull image từ Docker Hub thay vì build local
+    build:
+      context: .
+      dockerfile: Dockerfile
     image: haind46/trucca-web:latest
     container_name: trucca-web
     restart: unless-stopped
     ports:
       - "3000:3000"
-    environment:
-      # Runtime environment - KHÔNG dùng proxy
-      - NODE_ENV=production
-      - PORT=3000
-      # Database connection (nếu có)
-      # - DATABASE_URL=${DATABASE_URL}
-    env_file:
-      - .env.production
+    # Dùng network_mode host để truy cập backend ở localhost:8002
     network_mode: "host"
+    # Load environment variables từ file
+    env_file:
+      - trucca-web.env
     volumes:
-      # Mount logs nếu cần
-      - ./logs:/app/logs
-
+      # Mount nginx.conf để dễ sửa mà không cần rebuild
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      # Mount logs ra ngoài (optional)
+      - ./logs/nginx:/var/log/nginx

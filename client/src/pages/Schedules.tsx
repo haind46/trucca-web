@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { API_ENDPOINTS } from "@/lib/api-endpoints";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Calendar as CalendarIcon, Clock } from "lucide-react";
@@ -16,15 +17,15 @@ export default function Schedules() {
   const today = format(new Date(), "dd/MM/yyyy");
 
   const { data: schedules = [], isLoading: schedulesLoading } = useQuery<Schedule[]>({
-    queryKey: ["/api/schedules"],
+    queryKey: [API_ENDPOINTS.SCHEDULES.LIST],
   });
 
   const { data: contacts = [] } = useQuery<Contact[]>({
-    queryKey: ["/api/contacts"],
+    queryKey: [API_ENDPOINTS.CONTACTS.LIST],
   });
 
   const { data: systems = [] } = useQuery<System[]>({
-    queryKey: ["/api/systems"],
+    queryKey: [API_ENDPOINTS.SYSTEMS.LIST],
   });
 
   const schedulesWithDetails: ScheduleWithDetails[] = schedules.map((schedule) => {

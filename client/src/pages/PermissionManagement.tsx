@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Pencil, Trash2, Search, Copy, Upload, Download, FileDown, Shield } from "lucide-react";
 import { fetchWithAuth } from "@/lib/api";
+import { API_ENDPOINTS, getApiUrl } from "@/lib/api-endpoints";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -189,7 +190,7 @@ export default function PermissionManagement() {
       }
 
       const response = await fetchWithAuth(
-        `http://localhost:8002/api/resources?${params.toString()}`
+        getApiUrl(API_ENDPOINTS.RESOURCES.LIST, Object.fromEntries(params))
       );
 
       if (!response.ok) {
@@ -205,7 +206,7 @@ export default function PermissionManagement() {
     queryKey: ["groups-for-permissions"],
     queryFn: async () => {
       const response = await fetchWithAuth(
-        "http://localhost:8002/api/sys-groups?page=1&limit=100"
+        getApiUrl(API_ENDPOINTS.SYS_GROUPS.LIST, { page: 1, limit: 100 })
       );
 
       if (!response.ok) {
@@ -222,7 +223,7 @@ export default function PermissionManagement() {
     queryKey: ["grouped-resources"],
     queryFn: async () => {
       const response = await fetchWithAuth(
-        "http://localhost:8002/api/permissions/resources"
+        API_ENDPOINTS.PERMISSIONS.RESOURCES
       );
 
       if (!response.ok) {
@@ -239,7 +240,7 @@ export default function PermissionManagement() {
     queryKey: ["group-permissions", selectedGroupId],
     queryFn: async () => {
       const response = await fetchWithAuth(
-        `http://localhost:8002/api/permissions/groups/${selectedGroupId}`
+        `${API_ENDPOINTS.PERMISSIONS.GROUPS}/${selectedGroupId}`
       );
 
       if (!response.ok) {
@@ -311,7 +312,7 @@ export default function PermissionManagement() {
   const createMutation = useMutation({
     mutationFn: async (data: ResourceFormData) => {
       const response = await fetchWithAuth(
-        "http://localhost:8002/api/resources/create",
+        API_ENDPOINTS.RESOURCES.CREATE,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -341,7 +342,7 @@ export default function PermissionManagement() {
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: ResourceFormData }) => {
       const response = await fetchWithAuth(
-        `http://localhost:8002/api/resources/update/${id}`,
+        `${API_ENDPOINTS.RESOURCES.UPDATE}/${id}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -371,7 +372,7 @@ export default function PermissionManagement() {
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
       const response = await fetchWithAuth(
-        `http://localhost:8002/api/resources/delete/${id}`,
+        `${API_ENDPOINTS.RESOURCES.DELETE}/${id}`,
         { method: "DELETE" }
       );
 
@@ -397,7 +398,7 @@ export default function PermissionManagement() {
   const bulkDeleteMutation = useMutation({
     mutationFn: async (ids: number[]) => {
       const response = await fetchWithAuth(
-        `http://localhost:8002/api/resources/delete?ids=${ids.join(",")}`,
+        getApiUrl(API_ENDPOINTS.RESOURCES.DELETE, { ids: ids.join(",") }),
         { method: "POST" }
       );
 
@@ -429,7 +430,7 @@ export default function PermissionManagement() {
       });
 
       const response = await fetchWithAuth(
-        `http://localhost:8002/api/resources/copy?${params.toString()}`,
+        getApiUrl(API_ENDPOINTS.RESOURCES.COPY, Object.fromEntries(params)),
         { method: "POST" }
       );
 
@@ -458,7 +459,7 @@ export default function PermissionManagement() {
       formData.append("file", file);
 
       const response = await fetchWithAuth(
-        "http://localhost:8002/api/resources/import",
+        API_ENDPOINTS.RESOURCES.IMPORT,
         { method: "POST", body: formData }
       );
 
@@ -485,7 +486,7 @@ export default function PermissionManagement() {
       console.log("Updating permissions for group:", groupId, "with resources:", resourceIds);
 
       const response = await fetchWithAuth(
-        `http://localhost:8002/api/permissions/groups/${groupId}`,
+        `${API_ENDPOINTS.PERMISSIONS.GROUPS}/${groupId}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -586,7 +587,7 @@ export default function PermissionManagement() {
 
   const handleExport = async () => {
     try {
-      const response = await fetchWithAuth("http://localhost:8002/api/resources/export");
+      const response = await fetchWithAuth(API_ENDPOINTS.RESOURCES.EXPORT);
 
       if (!response.ok) {
         throw new Error("Failed to export resources");
@@ -610,7 +611,7 @@ export default function PermissionManagement() {
 
   const handleDownloadTemplate = async () => {
     try {
-      const response = await fetchWithAuth("http://localhost:8002/api/resources/import-template");
+      const response = await fetchWithAuth(API_ENDPOINTS.RESOURCES.IMPORT_TEMPLATE);
 
       if (!response.ok) {
         throw new Error("Failed to download template");
