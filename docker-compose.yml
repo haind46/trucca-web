@@ -9,8 +9,6 @@ services:
     image: haind46/trucca-web:latest
     container_name: trucca-web
     restart: unless-stopped
-    ports:
-      - "3000:3000"
     # Dùng network_mode host để truy cập backend ở localhost:8002
     network_mode: "host"
     # Load environment variables từ file
@@ -21,3 +19,4 @@ services:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
       # Mount logs ra ngoài (optional)
       - ./logs/nginx:/var/log/nginx
+
