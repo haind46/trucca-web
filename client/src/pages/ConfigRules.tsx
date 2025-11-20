@@ -96,35 +96,31 @@ export default function ConfigRules() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">Quản lý Alert Rules</h1>
-          <p className="text-sm text-muted-foreground">
-            Cấu hình quy tắc phát hiện và cảnh báo sự cố
-          </p>
-        </div>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button data-testid="button-add-rule">
-              <Plus className="h-4 w-4 mr-2" />
-              Thêm rule
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Thêm alert rule mới</DialogTitle>
-            </DialogHeader>
-            <AlertRuleForm onSubmit={handleSubmit} />
-          </DialogContent>
-        </Dialog>
-      </div>
-
+    <div className="space-y-4">
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Danh sách rules</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            Quản lý Alert Rules
+          </CardTitle>
         </CardHeader>
         <CardContent>
+          <div className="flex items-center justify-end mb-4">
+            <Dialog open={open} onOpenChange={setOpen}>
+              <DialogTrigger asChild>
+                <Button data-testid="button-add-rule">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Thêm rule
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>Thêm alert rule mới</DialogTitle>
+                </DialogHeader>
+                <AlertRuleForm onSubmit={handleSubmit} />
+              </DialogContent>
+            </Dialog>
+          </div>
+
           {isLoading ? (
             <div className="p-8 text-center text-muted-foreground">
               Đang tải...

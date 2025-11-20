@@ -43,6 +43,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 
 interface AlertFrequency {
   id: number;
@@ -129,12 +130,13 @@ export default function ConfigAlertFrequency() {
         body: JSON.stringify(data),
       });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to create alert frequency");
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || "Failed to create alert frequency");
       }
 
-      return response.json();
+      return result;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["alert-frequencies"] });
@@ -425,77 +427,66 @@ export default function ConfigAlertFrequency() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold flex items-center gap-2">
-            <Bell className="h-6 w-6" />
-            Quản lý Tần suất Cảnh báo
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Quản lý cấu hình tần suất cảnh báo
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={handleDownloadTemplate}>
-            <FileDown className="h-4 w-4 mr-2" />
-            Tải template
-          </Button>
-          <Button variant="outline" size="sm" onClick={handleExport}>
-            <Download className="h-4 w-4 mr-2" />
-            Xuất Excel
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={importMutation.isPending}
-          >
-            <Upload className="h-4 w-4 mr-2" />
-            Nhập Excel
-          </Button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".xlsx,.xls,.csv,.txt"
-            className="hidden"
-            onChange={handleImport}
-          />
-          <Button onClick={handleCreateClick}>
-            <Plus className="h-4 w-4 mr-2" />
-            Thêm mới
-          </Button>
-        </div>
-      </div>
-
+    <div className="space-y-4">
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Danh sách Cấu hình Tần suất Cảnh báo</CardTitle>
-            <div className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2">
+            <Bell className="h-5 w-5" />
+            Quản lý Tần suất Cảnh báo
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between mb-4 gap-4">
+            <div className="flex items-center gap-2 flex-1 max-w-md">
               <Input
                 placeholder="Tìm kiếm..."
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 onKeyPress={handleKeyPress}
-                className="w-64"
+                className="flex-1"
               />
-              <Button size="sm" onClick={handleSearch}>
+              <Button onClick={handleSearch} variant="outline" size="icon">
                 <Search className="h-4 w-4" />
               </Button>
             </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {selectedItems.size > 0 && (
-            <div className="mb-4 flex items-center gap-2">
-              <Badge variant="secondary">Đã chọn {selectedItems.size}</Badge>
-              <Button variant="destructive" size="sm" onClick={handleBulkDelete}>
-                <Trash2 className="h-4 w-4 mr-2" />
-                Xóa đã chọn
+            <div className="flex items-center gap-2">
+              {selectedItems.size > 0 && (
+                <Button variant="destructive" size="sm" onClick={handleBulkDelete}>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Xóa nhiều ({selectedItems.size})
+                </Button>
+              )}
+              <Button variant="outline" size="sm" onClick={handleDownloadTemplate}>
+                <FileDown className="h-4 w-4 mr-2" />
+                File mẫu
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={importMutation.isPending}
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                Import
+              </Button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".xlsx,.xls,.csv,.txt"
+                className="hidden"
+                onChange={handleImport}
+              />
+              <Button variant="outline" size="sm" onClick={handleExport}>
+                <Download className="h-4 w-4 mr-2" />
+                Export
+              </Button>
+              <Button onClick={handleCreateClick}>
+                <Plus className="h-4 w-4 mr-2" />
+                Thêm mới
               </Button>
             </div>
-          )}
+          </div>
+
 
           {isLoading ? (
             <div className="text-center py-8">Đang tải...</div>
@@ -514,7 +505,7 @@ export default function ConfigAlertFrequency() {
                         onCheckedChange={handleSelectAll}
                       />
                     </TableHead>
-                    <TableHead>Alert Status ID</TableHead>
+                    <TableHead>Mã Cấu hình</TableHead>
                     <TableHead>Số lần lặp</TableHead>
                     <TableHead>Khoảng thời gian (phút)</TableHead>
                     <TableHead>Trạng thái</TableHead>
@@ -617,7 +608,7 @@ export default function ConfigAlertFrequency() {
 
       {/* Create/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>
               {editingItem ? "Cập nhật Cấu hình Tần suất Cảnh báo" : "Thêm Cấu hình Tần suất Cảnh báo"}
@@ -630,20 +621,43 @@ export default function ConfigAlertFrequency() {
           </DialogHeader>
           <form onSubmit={handleSubmit}>
             <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="alertStatusId">
-                  Alert Status ID <span className="text-destructive">*</span>
-                </Label>
-                <Input
-                  id="alertStatusId"
-                  type="number"
-                  value={formData.alertStatusId}
-                  onChange={(e) =>
-                    setFormData({ ...formData, alertStatusId: parseInt(e.target.value) || 1 })
-                  }
-                  placeholder="Nhập Alert Status ID"
-                  required
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="alertStatusId">
+                    Mã Cấu hình <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="alertStatusId"
+                    type="number"
+                    value={formData.alertStatusId}
+                    onChange={(e) =>
+                      setFormData({ ...formData, alertStatusId: parseInt(e.target.value) || 1 })
+                    }
+                    placeholder="Nhập Mã Cấu hình"
+                    required
+                    disabled={!!editingItem}
+                  />
+                  {editingItem && (
+                    <p className="text-xs text-muted-foreground">
+                      Không thể thay đổi khi chỉnh sửa
+                    </p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="intervalMinutes">
+                    Khoảng thời gian (phút) <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="intervalMinutes"
+                    type="number"
+                    value={formData.intervalMinutes}
+                    onChange={(e) =>
+                      setFormData({ ...formData, intervalMinutes: parseInt(e.target.value) || 10 })
+                    }
+                    placeholder="Nhập khoảng thời gian"
+                    required
+                  />
+                </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="repeatCount">Số lần lặp</Label>
@@ -663,37 +677,13 @@ export default function ConfigAlertFrequency() {
                   Để trống hoặc NULL để lặp vô hạn
                 </p>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="intervalMinutes">
-                  Khoảng thời gian (phút) <span className="text-destructive">*</span>
-                </Label>
-                <Input
-                  id="intervalMinutes"
-                  type="number"
-                  value={formData.intervalMinutes}
-                  onChange={(e) =>
-                    setFormData({ ...formData, intervalMinutes: parseInt(e.target.value) || 10 })
-                  }
-                  placeholder="Nhập khoảng thời gian"
-                  required
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="isActive"
+                  checked={formData.isActive}
+                  onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
                 />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="isActive">
-                  Trạng thái <span className="text-destructive">*</span>
-                </Label>
-                <Select
-                  value={formData.isActive ? "true" : "false"}
-                  onValueChange={(value) => setFormData({ ...formData, isActive: value === "true" })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="true">Hoạt động</SelectItem>
-                    <SelectItem value="false">Không hoạt động</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="isActive">Kích hoạt</Label>
               </div>
             </div>
             <DialogFooter>

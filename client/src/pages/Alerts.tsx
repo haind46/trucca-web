@@ -77,17 +77,15 @@ export default function Alerts() {
   const isLoading = alertsLoading || systemsLoading;
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Quản lý Cảnh báo</h1>
-        <p className="text-sm text-muted-foreground">
-          Xem và xử lý các cảnh báo từ hệ thống
-        </p>
-      </div>
-
+    <div className="space-y-4">
       <Card>
         <CardHeader>
-          <div className="flex flex-col md:flex-row gap-4">
+          <CardTitle className="flex items-center gap-2">
+            Quản lý Cảnh báo
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col md:flex-row gap-4 mb-4">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -122,8 +120,7 @@ export default function Alerts() {
               </Button>
             </div>
           </div>
-        </CardHeader>
-        <CardContent className="p-0">
+
           {isLoading ? (
             <div className="p-8 text-center text-muted-foreground">
               Đang tải...

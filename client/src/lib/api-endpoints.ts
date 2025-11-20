@@ -35,15 +35,42 @@ export const API_ENDPOINTS = {
     ACKNOWLEDGE: (id: number | string) => `${API_BASE}/alerts/${id}/acknowledge`,
   },
 
-  // Contacts
+  // Contacts (Thông tin liên hệ)
   CONTACTS: {
     LIST: `${API_BASE}/contacts`,
+    FILTER: `${API_BASE}/contacts/filter`,
     DETAIL: (id: number | string) => `${API_BASE}/contacts/${id}`,
-    CREATE: `${API_BASE}/contacts`,
-    DELETE: (id: number | string) => `${API_BASE}/contacts/${id}`,
+    CREATE: `${API_BASE}/contacts/create`,
+    UPDATE: `${API_BASE}/contacts/edit`,
+    DELETE: `${API_BASE}/contacts/delete`,
+    COPY: (id: number | string) => `${API_BASE}/contacts/copy/${id}`,
+    EXPORT: `${API_BASE}/contacts/export`,
+    IMPORT: `${API_BASE}/contacts/import`,
+    TEMPLATE: `${API_BASE}/contacts/template`,
   },
 
-  // Groups
+  // Group Contacts (Nhóm liên hệ)
+  GROUP_CONTACTS: {
+    LIST: `${API_BASE}/group_contacts`,
+    FILTER: `${API_BASE}/group_contacts/filter`,
+    DETAIL: (id: number | string) => `${API_BASE}/group_contacts/${id}`,
+    CREATE: `${API_BASE}/group_contacts/create`,
+    UPDATE: `${API_BASE}/group_contacts/edit`,
+    DELETE: `${API_BASE}/group_contacts/delete`,
+    COPY: (id: number | string) => `${API_BASE}/group_contacts/copy/${id}`,
+    EXPORT: `${API_BASE}/group_contacts/export`,
+    IMPORT: `${API_BASE}/group_contacts/import`,
+    TEMPLATE: `${API_BASE}/group_contacts/template`,
+    // Contact members management
+    CONTACTS: (groupId: number | string) => `${API_BASE}/group_contacts/${groupId}/contacts`,
+    ADD_CONTACT: (groupId: number | string) => `${API_BASE}/group_contacts/${groupId}/contacts/add`,
+    ADD_CONTACTS: (groupId: number | string) => `${API_BASE}/group_contacts/${groupId}/contacts/add-multiple`,
+    REMOVE_CONTACT: (groupId: number | string) => `${API_BASE}/group_contacts/${groupId}/contacts/remove`,
+    REMOVE_CONTACTS: (groupId: number | string) => `${API_BASE}/group_contacts/${groupId}/contacts/remove-multiple`,
+    COUNT_CONTACTS: (groupId: number | string) => `${API_BASE}/group_contacts/${groupId}/contacts/count`,
+  },
+
+  // Groups (Alert notification groups)
   GROUPS: {
     LIST: `${API_BASE}/groups`,
     DETAIL: (id: number | string) => `${API_BASE}/groups/${id}`,
@@ -187,6 +214,51 @@ export const API_ENDPOINTS = {
   // User Groups
   USER_GROUPS: {
     BY_GROUP: (groupId: number | string) => `${API_BASE}/user-groups/group/${groupId}`,
+  },
+
+  // Shifts (Ca trực)
+  SHIFTS: {
+    LIST: `${API_BASE}/shifts`,
+    FILTER: `${API_BASE}/shifts/filter`,
+    DETAIL: (id: number | string) => `${API_BASE}/shifts/${id}`,
+    CREATE: `${API_BASE}/shifts/create`,
+    UPDATE: `${API_BASE}/shifts/edit`,
+    DELETE: (id: number | string) => `${API_BASE}/shifts/delete/${id}`,
+    DELETE_MANY: `${API_BASE}/shifts/delete`,
+    COPY: (id: number | string) => `${API_BASE}/shifts/copy/${id}`,
+    EXPORT: `${API_BASE}/shifts/export`,
+    IMPORT: `${API_BASE}/shifts/import`,
+    TEMPLATE: `${API_BASE}/shifts/template`,
+  },
+
+  // Schedule (Lịch trực)
+  SCHEDULE: {
+    LIST: `${API_BASE}/schedule`,
+    FILTER: `${API_BASE}/schedule/filter`,
+    DETAIL: (id: number | string) => `${API_BASE}/schedule/${id}`,
+    CREATE: `${API_BASE}/schedule/create`,
+    UPDATE: `${API_BASE}/schedule/edit`,
+    DELETE: (id: number | string) => `${API_BASE}/schedule/delete/${id}`,
+    DELETE_MANY: `${API_BASE}/schedule/delete`,
+    COPY: (id: number | string) => `${API_BASE}/schedule/copy/${id}`,
+    EXPORT: `${API_BASE}/schedule/export`,
+    IMPORT: `${API_BASE}/schedule/import`,
+    TEMPLATE: `${API_BASE}/schedule/template`,
+  },
+
+  // Schedule Assignments (Phân công ca trực)
+  SCHEDULE_ASSIGNMENTS: {
+    LIST: `${API_BASE}/schedule_assignments`,
+    FILTER: `${API_BASE}/schedule_assignments/filter`,
+    DETAIL: (id: number | string) => `${API_BASE}/schedule_assignments/${id}`,
+    CREATE: `${API_BASE}/schedule_assignments/create`,
+    UPDATE: `${API_BASE}/schedule_assignments/edit`,
+    DELETE: (id: number | string) => `${API_BASE}/schedule_assignments/delete/${id}`,
+    DELETE_MANY: `${API_BASE}/schedule_assignments/delete`,
+    COPY: (id: number | string) => `${API_BASE}/schedule_assignments/copy/${id}`,
+    EXPORT: `${API_BASE}/schedule_assignments/export`,
+    IMPORT: `${API_BASE}/schedule_assignments/import`,
+    TEMPLATE: `${API_BASE}/schedule_assignments/template`,
   },
 } as const;
 

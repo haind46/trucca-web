@@ -19,12 +19,14 @@ import ConfigSystemLevel from "@/pages/ConfigSystemLevel";
 import ConfigRoles from "@/pages/ConfigRoles";
 import ConfigAlertFrequency from "@/pages/ConfigAlertFrequency";
 import ConfigContacts from "@/pages/ConfigContacts";
+import ConfigGroupContacts from "@/pages/ConfigGroupContacts";
 import ConfigGroups from "@/pages/ConfigGroups";
 import ConfigRules from "@/pages/ConfigRules";
 import UserManagement from "@/pages/UserManagement";
 import UserGroupManagement from "@/pages/UserGroupManagement";
 import DepartmentManagement from "@/pages/DepartmentManagement";
 import PermissionManagement from "@/pages/PermissionManagement";
+import ScheduleManagement from "@/pages/ScheduleManagement";
 import UnderDevelopment from "@/pages/UnderDevelopment";
 import NotFound from "@/pages/not-found";
 
@@ -45,9 +47,10 @@ function Router() {
       <Route path="/config/system-levels" component={ConfigSystemLevel} />
       <Route path="/config/alert-frequency" component={ConfigAlertFrequency} />
       <Route path="/config/contacts" component={ConfigContacts} />
+      <Route path="/config/group-contacts" component={ConfigGroupContacts} />
       <Route path="/config/groups" component={ConfigGroups} />
       <Route path="/config/alert-rules" component={ConfigRules} />
-      <Route path="/config/schedules" component={UnderDevelopment} />
+      <Route path="/config/schedules" component={ScheduleManagement} />
       <Route path="/config/alerts" component={UnderDevelopment} />
       <Route path="/config/notifications" component={UnderDevelopment} />
       <Route path="/config/incidents" component={UnderDevelopment} />

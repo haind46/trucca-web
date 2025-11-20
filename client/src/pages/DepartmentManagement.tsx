@@ -330,7 +330,7 @@ export default function DepartmentManagement() {
   const totalPages = totalElements > 0 ? Math.ceil(totalElements / limit) : 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">

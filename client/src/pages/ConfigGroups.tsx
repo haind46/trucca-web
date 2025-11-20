@@ -51,38 +51,34 @@ export default function ConfigGroups() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">Quản lý Groups</h1>
-          <p className="text-sm text-muted-foreground">
-            Nhóm vận hành và phân quyền cảnh báo
-          </p>
-        </div>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button data-testid="button-add-group">
-              <Plus className="h-4 w-4 mr-2" />
-              Thêm group
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Tạo group mới</DialogTitle>
-            </DialogHeader>
-            <GroupForm
-              onSubmit={handleCreateGroup}
-              isPending={createGroupMutation.isPending}
-            />
-          </DialogContent>
-        </Dialog>
-      </div>
-
+    <div className="space-y-4">
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Danh sách groups</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            Quản lý Groups
+          </CardTitle>
         </CardHeader>
         <CardContent>
+          <div className="flex items-center justify-end mb-4">
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+              <DialogTrigger asChild>
+                <Button data-testid="button-add-group">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Thêm group
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Tạo group mới</DialogTitle>
+                </DialogHeader>
+                <GroupForm
+                  onSubmit={handleCreateGroup}
+                  isPending={createGroupMutation.isPending}
+                />
+              </DialogContent>
+            </Dialog>
+          </div>
+
           {isLoading ? (
             <div className="p-8 text-center text-muted-foreground">
               Đang tải...

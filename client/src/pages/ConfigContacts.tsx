@@ -1,16 +1,26 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { API_ENDPOINTS } from "@/lib/api-endpoints";
+import { useState, useRef } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Plus, Pencil, Trash2, Search, Copy, Upload, Download, FileDown, Users } from "lucide-react";
+import { fetchWithAuth } from "@/lib/api";
+import { API_ENDPOINTS, getApiUrl } from "@/lib/api-endpoints";
 import { Button } from "@/components/ui/button";
-import { ContactForm } from "@/components/ContactForm";
-import { Plus, Mail, Phone, Trash2 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { useState } from "react";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -22,167 +32,769 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { queryClient, apiRequest } from "@/lib/queryClient";
-import type { Contact, InsertContact } from "@shared/schema";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+
+interface Department {
+  id: number;
+  name: string;
+  deptCode: string;
+  description: string | null;
+}
+
+interface Contact {
+  id: number;
+  fullName: string;
+  departmentId: number | null;
+  department: Department | null;
+  email: string;
+  phone: string;
+  isActive: boolean;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface ContactFormData {
+  fullName: string;
+  departmentId: number | null;
+  email: string;
+  phone: string;
+  isActive: boolean;
+  notes: string;
+}
+
+interface ApiResponse {
+  success: boolean;
+  data: {
+    data: Contact[];
+    total: number;
+    page: number;
+    size: number;
+  };
+  message: string;
+  statusCode: number;
+}
+
+interface DepartmentApiResponse {
+  success: boolean;
+  data: {
+    data: Department[];
+    total: number;
+    page: number;
+    size: number;
+  };
+  message: string;
+  statusCode: number;
+}
 
 export default function ConfigContacts() {
-  const [open, setOpen] = useState(false);
-  const [deleteId, setDeleteId] = useState<number | null>(null);
-  const { toast } = useToast();
-
-  const { data: contacts = [], isLoading } = useQuery<Contact[]>({
-    queryKey: [API_ENDPOINTS.CONTACTS.LIST],
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10);
+  const [keyword, setKeyword] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<Contact | null>(null);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [formData, setFormData] = useState<ContactFormData>({
+    fullName: "",
+    departmentId: null,
+    email: "",
+    phone: "",
+    isActive: true,
+    notes: "",
   });
 
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Fetch departments for dropdown
+  const { data: departmentsData } = useQuery({
+    queryKey: ["departments-list"],
+    queryFn: async () => {
+      const response = await fetchWithAuth(getApiUrl(API_ENDPOINTS.DEPARTMENTS.LIST, { page: 1, limit: 100 }));
+      if (!response.ok) {
+        throw new Error("Failed to fetch departments");
+      }
+      const result: DepartmentApiResponse = await response.json();
+      return result.data.data;
+    },
+  });
+
+  // Fetch contacts
+  const { data, isLoading } = useQuery({
+    queryKey: ["contacts", page, limit, keyword],
+    queryFn: async () => {
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: limit.toString(),
+        sortDir: "desc",
+        sortKey: "id",
+      });
+      if (keyword) {
+        params.append("keyword", keyword);
+      }
+
+      const response = await fetchWithAuth(getApiUrl(API_ENDPOINTS.CONTACTS.LIST, Object.fromEntries(params)));
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch contacts");
+      }
+
+      const result: ApiResponse = await response.json();
+      return result.data;
+    },
+  });
+
+  // Create mutation
   const createMutation = useMutation({
-    mutationFn: async (data: InsertContact) => {
-      return await apiRequest("POST", API_ENDPOINTS.CONTACTS.LIST, data);
+    mutationFn: async (data: ContactFormData) => {
+      const response = await fetchWithAuth(API_ENDPOINTS.CONTACTS.CREATE, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to create contact");
+      }
+
+      return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [API_ENDPOINTS.CONTACTS.LIST] });
-      setOpen(false);
-      toast({
-        title: "Thành công",
-        description: "Đã thêm contact mới",
-      });
+      queryClient.invalidateQueries({ queryKey: ["contacts"] });
+      setIsDialogOpen(false);
+      resetForm();
+      toast({ title: "Thành công", description: "Đã thêm thông tin liên hệ" });
     },
-    onError: (error: any) => {
-      toast({
-        title: "Lỗi",
-        description: error.message || "Không thể thêm contact",
-        variant: "destructive",
-      });
+    onError: (error: Error) => {
+      toast({ title: "Lỗi", description: error.message, variant: "destructive" });
     },
   });
 
+  // Update mutation
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: ContactFormData }) => {
+      const response = await fetchWithAuth(getApiUrl(API_ENDPOINTS.CONTACTS.UPDATE, { id }), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to update contact");
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["contacts"] });
+      setIsDialogOpen(false);
+      setEditingItem(null);
+      resetForm();
+      toast({ title: "Thành công", description: "Đã cập nhật thông tin liên hệ" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Lỗi", description: error.message, variant: "destructive" });
+    },
+  });
+
+  // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      return await apiRequest("DELETE", `/api/contacts/${id}`);
+      const response = await fetchWithAuth(`${API_ENDPOINTS.CONTACTS.DELETE}/${id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to delete contact");
+      }
+
+      return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [API_ENDPOINTS.CONTACTS.LIST] });
-      toast({
-        title: "Thành công",
-        description: "Đã xóa contact",
-      });
-      setDeleteId(null);
+      queryClient.invalidateQueries({ queryKey: ["contacts"] });
+      setIsDeleteDialogOpen(false);
+      setDeletingId(null);
+      toast({ title: "Thành công", description: "Đã xóa thông tin liên hệ" });
     },
-    onError: (error: any) => {
-      toast({
-        title: "Lỗi",
-        description: error.message || "Không thể xóa contact",
-        variant: "destructive",
-      });
+    onError: (error: Error) => {
+      toast({ title: "Lỗi", description: error.message, variant: "destructive" });
     },
   });
 
-  const handleSubmit = (data: InsertContact) => {
-    createMutation.mutate(data);
+  // Bulk delete mutation
+  const bulkDeleteMutation = useMutation({
+    mutationFn: async (ids: number[]) => {
+      const response = await fetchWithAuth(
+        getApiUrl(API_ENDPOINTS.CONTACTS.DELETE, { ids: ids.join(",") }),
+        { method: "POST" }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to delete contacts");
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["contacts"] });
+      setIsBulkDeleteDialogOpen(false);
+      setSelectedItems(new Set());
+      toast({ title: "Thành công", description: "Đã xóa các liên hệ đã chọn" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Lỗi", description: error.message, variant: "destructive" });
+    },
+  });
+
+  // Import mutation
+  const importMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetchWithAuth(API_ENDPOINTS.CONTACTS.IMPORT, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to import contacts");
+      }
+
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["contacts"] });
+      toast({ title: "Thành công", description: data.message || "Đã import dữ liệu" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Lỗi", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const resetForm = () => {
+    setFormData({
+      fullName: "",
+      departmentId: null,
+      email: "",
+      phone: "",
+      isActive: true,
+      notes: "",
+    });
   };
 
-  const handleDelete = (id: number) => {
-    deleteMutation.mutate(id);
+  const handleCreateClick = () => {
+    resetForm();
+    setEditingItem(null);
+    setIsDialogOpen(true);
   };
+
+  const handleEditClick = (item: Contact) => {
+    setEditingItem(item);
+    setFormData({
+      fullName: item.fullName,
+      departmentId: item.departmentId,
+      email: item.email,
+      phone: item.phone,
+      isActive: item.isActive,
+      notes: item.notes || "",
+    });
+    setIsDialogOpen(true);
+  };
+
+  const handleDeleteClick = (id: number) => {
+    setDeletingId(id);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editingItem) {
+      updateMutation.mutate({ id: editingItem.id, data: formData });
+    } else {
+      createMutation.mutate(formData);
+    }
+  };
+
+  const handleConfirmDelete = () => {
+    if (deletingId) {
+      deleteMutation.mutate(deletingId);
+    }
+  };
+
+  const handleSearch = () => {
+    setKeyword(searchInput);
+    setPage(1);
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked && data) {
+      setSelectedItems(new Set(data.data.map((item) => item.id)));
+    } else {
+      setSelectedItems(new Set());
+    }
+  };
+
+  const handleSelectOne = (id: number, checked: boolean) => {
+    const newSelected = new Set(selectedItems);
+    if (checked) {
+      newSelected.add(id);
+    } else {
+      newSelected.delete(id);
+    }
+    setSelectedItems(newSelected);
+  };
+
+  const handleBulkDelete = () => {
+    if (selectedItems.size > 0) {
+      setIsBulkDeleteDialogOpen(true);
+    }
+  };
+
+  const handleConfirmBulkDelete = () => {
+    bulkDeleteMutation.mutate(Array.from(selectedItems));
+  };
+
+  const handleCopy = async (item: Contact) => {
+    try {
+      const response = await fetchWithAuth(API_ENDPOINTS.CONTACTS.COPY(item.id), {
+        method: "POST",
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to copy contact");
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["contacts"] });
+      toast({ title: "Thành công", description: "Đã sao chép thông tin liên hệ" });
+    } catch (error: any) {
+      toast({ title: "Lỗi", description: error.message, variant: "destructive" });
+    }
+  };
+
+  const handleExport = async () => {
+    try {
+      const response = await fetchWithAuth(API_ENDPOINTS.CONTACTS.EXPORT);
+
+      if (!response.ok) {
+        throw new Error("Failed to export");
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `contacts_export_${new Date().toISOString()}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast({ title: "Thành công", description: "Đã xuất dữ liệu" });
+    } catch (error: any) {
+      toast({ title: "Lỗi", description: error.message, variant: "destructive" });
+    }
+  };
+
+  const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      importMutation.mutate(file);
+      event.target.value = "";
+    }
+  };
+
+  const handleDownloadTemplate = async () => {
+    try {
+      const response = await fetchWithAuth(API_ENDPOINTS.CONTACTS.TEMPLATE);
+
+      if (!response.ok) {
+        throw new Error("Failed to download template");
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "contacts_template.xlsx";
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast({ title: "Thành công", description: "Đã tải template" });
+    } catch (error: any) {
+      toast({ title: "Lỗi", description: error.message, variant: "destructive" });
+    }
+  };
+
+  const items = data?.data || [];
+  const totalItems = data?.total || 0;
+  const totalPages = Math.ceil(totalItems / limit);
+  const departments = departmentsData || [];
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">Quản lý Contacts</h1>
-          <p className="text-sm text-muted-foreground">
-            Danh bạ nhân sự tham gia trực ca và vận hành
-          </p>
-        </div>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button data-testid="button-add-contact">
-              <Plus className="h-4 w-4 mr-2" />
-              Thêm contact
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Thêm contact mới</DialogTitle>
-            </DialogHeader>
-            <ContactForm onSubmit={handleSubmit} />
-          </DialogContent>
-        </Dialog>
-      </div>
-
+    <div className="space-y-4">
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Danh sách contacts</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            Quản lý Thông tin Liên hệ
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          {isLoading ? (
-            <div className="p-8 text-center text-muted-foreground">
-              Đang tải...
+          <div className="flex items-center justify-between mb-4 gap-4">
+            <div className="flex items-center gap-2 flex-1 max-w-md">
+              <Input
+                placeholder="Tìm kiếm theo họ tên, email, số điện thoại..."
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                className="flex-1"
+              />
+              <Button onClick={handleSearch} variant="outline" size="icon">
+                <Search className="h-4 w-4" />
+              </Button>
             </div>
-          ) : contacts.length === 0 ? (
-            <div className="p-8 text-center text-muted-foreground">
-              Chưa có contact nào. Nhấn "Thêm contact" để bắt đầu.
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {contacts.map((contact) => (
-                <div
-                  key={contact.id}
-                  className="p-4 border rounded-md space-y-2 hover-elevate"
-                  data-testid={`contact-card-${contact.id}`}
+            <div className="flex items-center gap-2">
+              {selectedItems.size > 0 && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleBulkDelete}
                 >
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium">{contact.name}</span>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="secondary">{contact.role}</Badge>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => setDeleteId(contact.id)}
-                        data-testid={`button-delete-contact-${contact.id}`}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="space-y-1 text-sm text-muted-foreground">
-                    <div className="flex items-center gap-2">
-                      <Mail className="h-3 w-3" />
-                      <span>{contact.email}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Phone className="h-3 w-3" />
-                      <span>{contact.phone}</span>
-                    </div>
-                  </div>
-                  {contact.unit && (
-                    <div className="text-xs text-muted-foreground">
-                      Đơn vị: {contact.unit}
-                    </div>
-                  )}
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Xóa nhiều ({selectedItems.size})
+                </Button>
+              )}
+              <Button variant="outline" size="sm" onClick={handleDownloadTemplate}>
+                <FileDown className="h-4 w-4 mr-2" />
+                File mẫu
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={importMutation.isPending}
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                Import
+              </Button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".xlsx,.xls,.csv,.txt"
+                className="hidden"
+                onChange={handleImport}
+              />
+              <Button variant="outline" size="sm" onClick={handleExport}>
+                <Download className="h-4 w-4 mr-2" />
+                Export
+              </Button>
+              <Button onClick={handleCreateClick}>
+                <Plus className="h-4 w-4 mr-2" />
+                Thêm mới
+              </Button>
+            </div>
+          </div>
+
+          <div className="border rounded-lg">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-12">
+                    <Checkbox
+                      checked={selectedItems.size === items.length && items.length > 0}
+                      onCheckedChange={handleSelectAll}
+                    />
+                  </TableHead>
+                  <TableHead>Họ và tên</TableHead>
+                  <TableHead>Đơn vị</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Số điện thoại</TableHead>
+                  <TableHead>Trạng thái</TableHead>
+                  <TableHead className="text-right">Thao tác</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center">
+                      Đang tải...
+                    </TableCell>
+                  </TableRow>
+                ) : items.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center text-muted-foreground">
+                      {keyword
+                        ? "Không tìm thấy kết quả phù hợp"
+                        : 'Chưa có thông tin liên hệ nào. Nhấn "Thêm mới" để bắt đầu.'}
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  items.map((item) => (
+                    <TableRow key={item.id}>
+                      <TableCell>
+                        <Checkbox
+                          checked={selectedItems.has(item.id)}
+                          onCheckedChange={(checked) =>
+                            handleSelectOne(item.id, checked as boolean)
+                          }
+                        />
+                      </TableCell>
+                      <TableCell className="font-medium">{item.fullName}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {item.department?.name || "-"}
+                      </TableCell>
+                      <TableCell className="text-sm">{item.email}</TableCell>
+                      <TableCell className="text-sm">{item.phone}</TableCell>
+                      <TableCell>
+                        {item.isActive ? (
+                          <Badge variant="default" className="bg-green-600">
+                            Hoạt động
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary">Không hoạt động</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleCopy(item)}
+                            title="Sao chép"
+                          >
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleEditClick(item)}
+                            title="Chỉnh sửa"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDeleteClick(item.id)}
+                            title="Xóa"
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between mt-4">
+              <div className="text-sm text-muted-foreground">
+                Hiển thị {(page - 1) * limit + 1} -{" "}
+                {Math.min(page * limit, totalItems)} trong tổng số {totalItems}
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage(page - 1)}
+                  disabled={page === 1}
+                >
+                  Trước
+                </Button>
+                <div className="text-sm">
+                  Trang {page} / {totalPages}
                 </div>
-              ))}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage(page + 1)}
+                  disabled={page === totalPages}
+                >
+                  Sau
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>
       </Card>
 
-      <AlertDialog open={deleteId !== null} onOpenChange={(open) => !open && setDeleteId(null)}>
+      {/* Create/Edit Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>
+              {editingItem ? "Cập nhật Thông tin Liên hệ" : "Thêm Thông tin Liên hệ"}
+            </DialogTitle>
+            <DialogDescription>
+              {editingItem
+                ? "Cập nhật thông tin liên hệ"
+                : "Nhập thông tin liên hệ mới"}
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSubmit}>
+            <div className="space-y-4 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="fullName">
+                    Họ và tên <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="fullName"
+                    value={formData.fullName}
+                    onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                    placeholder="Nguyễn Văn A"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="departmentId">
+                    Đơn vị <span className="text-destructive">*</span>
+                  </Label>
+                  <Select
+                    value={formData.departmentId?.toString() || ""}
+                    onValueChange={(value) => setFormData({ ...formData, departmentId: value ? parseInt(value) : null })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="-- Chọn đơn vị --" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {departments.map((dept) => (
+                        <SelectItem key={dept.id} value={dept.id.toString()}>
+                          {dept.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email">
+                    Email <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    placeholder="nguyenvana@company.com"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="phone">
+                    Số điện thoại <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="phone"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    placeholder="0901234567"
+                    required
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="notes">Ghi chú</Label>
+                <Textarea
+                  id="notes"
+                  value={formData.notes}
+                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                  placeholder="Nhập ghi chú..."
+                  rows={3}
+                />
+              </div>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="isActive"
+                  checked={formData.isActive}
+                  onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
+                />
+                <Label htmlFor="isActive">Kích hoạt</Label>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                Hủy
+              </Button>
+              <Button
+                type="submit"
+                disabled={createMutation.isPending || updateMutation.isPending}
+              >
+                {editingItem ? "Cập nhật" : "Thêm mới"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Xác nhận xóa</AlertDialogTitle>
             <AlertDialogDescription>
-              Bạn có chắc chắn muốn xóa contact này? Hành động này không thể hoàn tác.
+              Bạn có chắc chắn muốn xóa thông tin liên hệ này? Hành động này không thể hoàn tác.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel data-testid="button-cancel-delete">Hủy</AlertDialogCancel>
+            <AlertDialogCancel>Hủy</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => deleteId && handleDelete(deleteId)}
-              data-testid="button-confirm-delete"
+              onClick={handleConfirmDelete}
+              className="bg-destructive hover:bg-destructive/90"
             >
               Xóa
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk Delete Dialog */}
+      <AlertDialog open={isBulkDeleteDialogOpen} onOpenChange={setIsBulkDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Xác nhận xóa nhiều</AlertDialogTitle>
+            <AlertDialogDescription>
+              Bạn có chắc chắn muốn xóa {selectedItems.size} liên hệ đã chọn? Hành động này không
+              thể hoàn tác.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Hủy</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmBulkDelete}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              Xóa tất cả
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

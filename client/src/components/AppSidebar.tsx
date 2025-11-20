@@ -6,7 +6,6 @@ import {
   Calendar,
   AlertTriangle,
   FileText,
-  Database,
   Shield,
   UserCog,
   Layers,
@@ -21,6 +20,10 @@ import {
   TrendingUp,
   Building2,
   Settings2,
+  FolderOpen,
+  BookOpen,
+  ScrollText,
+  Monitor,
 } from "lucide-react";
 import {
   Sidebar,
@@ -69,14 +72,14 @@ const adminMenuItems = [
     icon: Settings2,
   },
   {
-    title: "Thông tin liên hệ (Contacts)",
+    title: "Thông tin liên hệ",
     url: "/config/contacts",
     icon: UserCircle,
   },
   {
-    title: "Nhóm liên hệ (Contacts Groups)",
-    url: "/config/groups",
-    icon: Layers,
+    title: "Nhóm liên hệ",
+    url: "/config/group-contacts",
+    icon: FolderOpen,
   },
 ];
 
@@ -93,45 +96,48 @@ const configMenuItems = [
     icon: Tag,
   },
   {
-    title: "Quản lý hệ thống (Systems)",
-    url: "/config/systems",
-    icon: Database,
+    title: "Lịch trực ca (Schedules)",
+    url: "/config/schedules",
+    icon: Calendar,
+  },
+    {
+    title: "Mức độ cảnh báo (Severity)",
+    url: "/config/severity",
+    icon: Calendar,
+  },
+    {
+    title: "Quy tắc cảnh báo (Alert Rules)",
+    url: "/config/alert-rules",
+    icon: Settings,
   },
   {
     title: "Tần suất cảnh báo (Alert Frequency)",
     url: "/config/alert-frequency",
     icon: Clock,
   },
-  {
-    title: "Quy tắc cảnh báo (Alert Rules)",
-    url: "/config/alert-rules",
-    icon: Settings,
-  },
-  {
-    title: "Lịch trực ca (Schedules)",
-    url: "/config/schedules",
-    icon: Calendar,
-  },
-  {
-    title: "Cấu hình cảnh báo",
-    url: "/config/alerts",
-    icon: AlertTriangle,
-  },
-  {
-    title: "Cấu hình thông báo",
-    url: "/config/notifications",
-    icon: Bell,
-  },
- 
-  {
-    title: "Cấu hình Log Analysis",
-    url: "/config/log-analysis",
-    icon: FileText,
+   {
+    title: "Quản lý hệ thống (Systems)",
+    url: "/config/systems",
+    icon: Monitor,
   },
 
 ];
 
-// III. Báo cáo, thống kê
+// III. Giám sát & Tra cứu
+const monitorMenuItems = [
+  {
+    title: "Từ điển mã lỗi (Error Dictionary)",
+    url: "/monitor/error-dictionary",
+    icon: BookOpen,
+  },
+  {
+    title: "Tra cứu Log phát sinh (Log Entries)",
+    url: "/monitor/log-entries",
+    icon: ScrollText,
+  },
+];
+
+// IV. Báo cáo, thống kê
 const reportMenuItems = [
   {
     title: "Báo cáo ca trực",
@@ -189,6 +195,25 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {configMenuItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild isActive={location === item.url}>
+                    <Link href={item.url}>
+                      <item.icon className="h-3.5 w-3.5" />
+                      <span className="text-xs">{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+        <SidebarGroup>
+          <SidebarGroupLabel className="text-[10px] font-bold uppercase text-primary">
+            Giám sát & Tra cứu
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {monitorMenuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild isActive={location === item.url}>
                     <Link href={item.url}>

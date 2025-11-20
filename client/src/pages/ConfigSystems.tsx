@@ -116,35 +116,31 @@ export default function ConfigSystems() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">Quản lý Hệ thống</h1>
-          <p className="text-sm text-muted-foreground">
-            Cấu hình và quản lý các hệ thống giám sát
-          </p>
-        </div>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button data-testid="button-add-system">
-              <Plus className="h-4 w-4 mr-2" />
-              Thêm hệ thống
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Thêm hệ thống mới</DialogTitle>
-            </DialogHeader>
-            <SystemForm onSubmit={handleCreate} isPending={createMutation.isPending} />
-          </DialogContent>
-        </Dialog>
-      </div>
-
+    <div className="space-y-4">
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Danh sách hệ thống</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            Quản lý Hệ thống
+          </CardTitle>
         </CardHeader>
         <CardContent>
+          <div className="flex items-center justify-end mb-4">
+            <Dialog open={open} onOpenChange={setOpen}>
+              <DialogTrigger asChild>
+                <Button data-testid="button-add-system">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Thêm hệ thống
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>Thêm hệ thống mới</DialogTitle>
+                </DialogHeader>
+                <SystemForm onSubmit={handleCreate} isPending={createMutation.isPending} />
+              </DialogContent>
+            </Dialog>
+          </div>
+
           {isLoading ? (
             <div className="p-8 text-center text-muted-foreground" data-testid="loading-systems">
               Đang tải...

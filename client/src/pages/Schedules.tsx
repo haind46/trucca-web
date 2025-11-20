@@ -41,21 +41,22 @@ export default function Schedules() {
 
   const todaySchedules = schedulesWithDetails.filter((s) => s.date === today);
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">Lịch trực ca</h1>
-          <p className="text-sm text-muted-foreground">
-            Quản lý lịch trực và phân công nhân sự
-          </p>
-        </div>
-        <Button data-testid="button-add-schedule">
-          <Plus className="h-4 w-4 mr-2" />
-          Thêm lịch trực
-        </Button>
-      </div>
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            Lịch trực ca
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-end mb-4">
+            <Button data-testid="button-add-schedule">
+              <Plus className="h-4 w-4 mr-2" />
+              Thêm lịch trực
+            </Button>
+          </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
@@ -128,7 +129,9 @@ export default function Schedules() {
             </div>
           </CardContent>
         </Card>
-      </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
