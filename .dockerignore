@@ -28,6 +28,10 @@ dist
 build
 .cache
 
+# Compiled TypeScript files (should not be committed)
+client/src/**/*.js
+client/src/**/*.js.map
+
 # Logs
 logs
 *.log

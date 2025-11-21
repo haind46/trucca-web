@@ -1,24 +1,7 @@
 {
   "permissions": {
     "allow": [
-      "Bash(tree:*)",
-      "Bash(nul)",
-      "Bash(findstr:*)",
-      "Bash(curl:*)",
-      "Bash(find:*)",
-      "Bash(mkdir:*)",
-      "Bash(cat:*)",
-      "Bash(dir:*)",
-      "Bash(docker-compose build:*)",
-      "Bash(docker run:*)",
-      "Bash(docker logs:*)",
-      "Bash(docker stop:*)",
-      "Bash(docker rm:*)",
-      "Bash(docker build:*)",
-      "Bash(grep:*)",
-      "Bash(for file in Dashboard.tsx Alerts.tsx ConfigSystems.tsx ConfigContacts.tsx ConfigGroups.tsx ConfigRules.tsx Reports.tsx Schedules.tsx Login.tsx)",
-      "Bash(do sed -i '1a import { API_ENDPOINTS } from \"\"@/lib/api-endpoints\"\";' \"$file\")",
-      "Bash(done)"
+      "Bash(node --check:*)"
     ],
     "deny": [],
     "ask": []

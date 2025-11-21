@@ -41,6 +41,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { fetchWithAuth } from "@/lib/api";
 import { API_ENDPOINTS } from "@/lib/api-endpoints";
@@ -122,7 +123,7 @@ interface ScheduleFormData {
 
 interface AssignmentFormData {
   scheduleId: number | null;
-  contactId: number | null;
+  contactIds: number[];
   role: string;
   status: string;
 }
@@ -201,7 +202,7 @@ export default function ScheduleManagement() {
   const [deleteAssignmentId, setDeleteAssignmentId] = useState<number | null>(null);
   const [assignmentFormData, setAssignmentFormData] = useState<AssignmentFormData>({
     scheduleId: null,
-    contactId: null,
+    contactIds: [],
     role: "primary",
     status: "assigned",
   });
@@ -476,9 +477,9 @@ export default function ScheduleManagement() {
 
   // Get all contacts for dropdown
   const { data: allContactsData } = useQuery({
-    queryKey: ["all-contacts"],
+    queryKey: ["all-contacts-for-assignment"],
     queryFn: async () => {
-      const response = await fetchWithAuth(`${API_ENDPOINTS.CONTACTS.FILTER}?limit=1000&isActive=true`);
+      const response = await fetchWithAuth(`${API_ENDPOINTS.CONTACTS.LIST}?page=1&limit=1000`);
       return response.json();
     },
   });
@@ -624,7 +625,7 @@ export default function ScheduleManagement() {
   const resetAssignmentForm = () => {
     setAssignmentFormData({
       scheduleId: null,
-      contactId: null,
+      contactIds: [],
       role: "primary",
       status: "assigned",
     });
@@ -893,7 +894,7 @@ export default function ScheduleManagement() {
     setEditingAssignment(assignment);
     setAssignmentFormData({
       scheduleId: assignment.scheduleId,
-      contactId: assignment.contactId,
+      contactIds: [assignment.contactId],
       role: assignment.role,
       status: assignment.status,
     });
@@ -904,7 +905,7 @@ export default function ScheduleManagement() {
     setEditingAssignment(null);
     setAssignmentFormData({
       scheduleId: assignment.scheduleId,
-      contactId: null,
+      contactIds: [],
       role: assignment.role,
       status: "assigned",
     });
@@ -913,10 +914,34 @@ export default function ScheduleManagement() {
 
   const handleAssignmentSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validation
+    if (!assignmentFormData.scheduleId) {
+      toast({ title: "Lỗi", description: "Vui lòng chọn lịch trực", variant: "destructive" });
+      return;
+    }
+    if (assignmentFormData.contactIds.length === 0) {
+      toast({ title: "Lỗi", description: "Vui lòng chọn ít nhất một người trực", variant: "destructive" });
+      return;
+    }
+
     if (editingAssignment) {
-      updateAssignmentMutation.mutate({ id: editingAssignment.id, data: assignmentFormData });
+      // Khi edit chỉ update 1 assignment
+      updateAssignmentMutation.mutate({
+        id: editingAssignment.id,
+        data: {
+          ...assignmentFormData,
+          contactId: assignmentFormData.contactIds[0]
+        }
+      });
     } else {
-      createAssignmentMutation.mutate(assignmentFormData);
+      // Tạo nhiều assignments cho mỗi contact được chọn
+      assignmentFormData.contactIds.forEach((contactId) => {
+        createAssignmentMutation.mutate({
+          ...assignmentFormData,
+          contactId,
+        } as any);
+      });
     }
   };
 
@@ -1591,88 +1616,148 @@ export default function ScheduleManagement() {
           setScheduleFilter("");
         }
       }}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>{editingAssignment ? "Chỉnh sửa phân công" : "Thêm phân công mới"}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleAssignmentSubmit}>
             <div className="space-y-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
+              {/* Lịch trực - Select dropdown */}
+              <div className="space-y-2">
+                <Label>
+                  Lịch trực <span className="text-destructive">*</span>
+                </Label>
                 <div className="space-y-2">
-                  <Label>
-                    Lịch trực <span className="text-destructive">*</span>
-                  </Label>
-                  <div className="space-y-2">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        placeholder="Tìm lịch trực..."
-                        value={scheduleFilter}
-                        onChange={(e) => setScheduleFilter(e.target.value)}
-                        className="pl-9"
-                      />
-                    </div>
-                    <Select
-                      value={assignmentFormData.scheduleId?.toString() || ""}
-                      onValueChange={(value) => setAssignmentFormData({ ...assignmentFormData, scheduleId: parseInt(value) })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Chọn lịch trực" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {filteredSchedules.length === 0 ? (
-                          <div className="p-2 text-sm text-muted-foreground text-center">
-                            Không tìm thấy lịch trực
-                          </div>
-                        ) : (
-                          filteredSchedules.map((schedule: Schedule) => (
-                            <SelectItem key={schedule.id} value={schedule.id.toString()}>
-                              {schedule.fromDate} {schedule.toDate ? `- ${schedule.toDate}` : ""} ({schedule.shift?.shiftName})
-                            </SelectItem>
-                          ))
-                        )}
-                      </SelectContent>
-                    </Select>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Tìm lịch trực..."
+                      value={scheduleFilter}
+                      onChange={(e) => setScheduleFilter(e.target.value)}
+                      className="pl-9"
+                    />
                   </div>
-                </div>
-                <div className="space-y-2">
-                  <Label>
-                    Người trực <span className="text-destructive">*</span>
-                  </Label>
-                  <div className="space-y-2">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        placeholder="Tìm theo tên, email, SĐT..."
-                        value={contactFilter}
-                        onChange={(e) => setContactFilter(e.target.value)}
-                        className="pl-9"
-                      />
-                    </div>
-                    <Select
-                      value={assignmentFormData.contactId?.toString() || ""}
-                      onValueChange={(value) => setAssignmentFormData({ ...assignmentFormData, contactId: parseInt(value) })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Chọn người trực" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {filteredContacts.length === 0 ? (
-                          <div className="p-2 text-sm text-muted-foreground text-center">
-                            Không tìm thấy người trực
-                          </div>
-                        ) : (
-                          filteredContacts.map((contact: Contact) => (
-                            <SelectItem key={contact.id} value={contact.id.toString()}>
-                              {contact.fullName} - {contact.phone}
-                            </SelectItem>
-                          ))
-                        )}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  <Select
+                    value={assignmentFormData.scheduleId?.toString() || ""}
+                    onValueChange={(value) => setAssignmentFormData({ ...assignmentFormData, scheduleId: parseInt(value) })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Chọn lịch trực" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {filteredSchedules.length === 0 ? (
+                        <div className="p-2 text-sm text-muted-foreground text-center">
+                          Không tìm thấy lịch trực
+                        </div>
+                      ) : (
+                        filteredSchedules.map((schedule: Schedule) => (
+                          <SelectItem key={schedule.id} value={schedule.id.toString()}>
+                            {schedule.fromDate} {schedule.toDate ? `- ${schedule.toDate}` : ""} ({schedule.shift?.shiftName})
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
+
+              {/* Người trực - Table với ScrollArea */}
+              <div className="space-y-2">
+                <Label>
+                  Người trực <span className="text-destructive">*</span>
+                </Label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Tìm theo tên, email, điện thoại, đơn vị..."
+                    value={contactFilter}
+                    onChange={(e) => setContactFilter(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+                <ScrollArea className="h-[200px] border rounded-lg">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-12">
+                          {!editingAssignment && (
+                            <Checkbox
+                              checked={filteredContacts.length > 0 && assignmentFormData.contactIds.length === filteredContacts.length}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setAssignmentFormData({
+                                    ...assignmentFormData,
+                                    contactIds: filteredContacts.map((c: Contact) => c.id)
+                                  });
+                                } else {
+                                  setAssignmentFormData({ ...assignmentFormData, contactIds: [] });
+                                }
+                              }}
+                            />
+                          )}
+                        </TableHead>
+                        <TableHead>Họ và tên</TableHead>
+                        <TableHead>Đơn vị</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Điện thoại</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredContacts.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center text-muted-foreground">
+                            Không tìm thấy người trực
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        filteredContacts.map((contact: Contact) => {
+                          const isSelected = assignmentFormData.contactIds.includes(contact.id);
+                          const handleToggle = () => {
+                            if (editingAssignment) {
+                              // Khi edit chỉ cho chọn 1 người
+                              setAssignmentFormData(prev => ({
+                                ...prev,
+                                contactIds: isSelected ? [] : [contact.id]
+                              }));
+                            } else {
+                              // Khi thêm mới cho chọn nhiều người
+                              setAssignmentFormData(prev => ({
+                                ...prev,
+                                contactIds: isSelected
+                                  ? prev.contactIds.filter(id => id !== contact.id)
+                                  : [...prev.contactIds, contact.id]
+                              }));
+                            }
+                          };
+
+                          return (
+                            <TableRow
+                              key={contact.id}
+                              className={`cursor-pointer ${isSelected ? 'bg-muted' : ''}`}
+                              onClick={handleToggle}
+                            >
+                              <TableCell onClick={(e) => e.stopPropagation()}>
+                                <Checkbox
+                                  checked={isSelected}
+                                  onCheckedChange={handleToggle}
+                                />
+                              </TableCell>
+                              <TableCell className="font-medium">{contact.fullName}</TableCell>
+                              <TableCell className="text-sm text-muted-foreground">
+                                {contact.department?.name || "-"}
+                              </TableCell>
+                              <TableCell className="text-sm">{contact.email}</TableCell>
+                              <TableCell className="text-sm">{contact.phone}</TableCell>
+                            </TableRow>
+                          );
+                        })
+                      )}
+                    </TableBody>
+                  </Table>
+                </ScrollArea>
+              </div>
+
+              {/* Vai trò và Trạng thái */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Vai trò</Label>
@@ -1715,7 +1800,7 @@ export default function ScheduleManagement() {
                 Hủy
               </Button>
               <Button type="submit" disabled={createAssignmentMutation.isPending || updateAssignmentMutation.isPending}>
-                {editingAssignment ? "Cập nhật" : "Thêm mới"}
+                {editingAssignment ? "Cập nhật" : `Thêm mới${assignmentFormData.contactIds.length > 0 ? ` (${assignmentFormData.contactIds.length})` : ''}`}
               </Button>
             </DialogFooter>
           </form>
