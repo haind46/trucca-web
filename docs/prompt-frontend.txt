@@ -1,0 +1,1 @@
+Tiếp theo, code cho tôi màn hình Quản lý Mức độ cảnh báo (Severity), tài liệu backend ở SEVERITY_CONFIG_API_DOCUMENTATION.md. Lưu ý có đủ các tính năng và rule theo mô tả ở crud-business-rule.md nhé
