@@ -18,6 +18,7 @@ import ConfigOperationTypes from "@/pages/ConfigOperationTypes";
 import ConfigSystemLevel from "@/pages/ConfigSystemLevel";
 import ConfigRoles from "@/pages/ConfigRoles";
 import ConfigAlertFrequency from "@/pages/ConfigAlertFrequency";
+import ConfigSeverity from "@/pages/ConfigSeverity";
 import ConfigContacts from "@/pages/ConfigContacts";
 import ConfigGroupContacts from "@/pages/ConfigGroupContacts";
 import ConfigGroups from "@/pages/ConfigGroups";
@@ -46,6 +47,7 @@ function Router() {
       <Route path="/config/operation-types" component={ConfigOperationTypes} />
       <Route path="/config/system-levels" component={ConfigSystemLevel} />
       <Route path="/config/alert-frequency" component={ConfigAlertFrequency} />
+      <Route path="/config/severity" component={ConfigSeverity} />
       <Route path="/config/contacts" component={ConfigContacts} />
       <Route path="/config/group-contacts" component={ConfigGroupContacts} />
       <Route path="/config/groups" component={ConfigGroups} />

@@ -100,10 +100,10 @@ const configMenuItems = [
     url: "/config/schedules",
     icon: Calendar,
   },
-    {
+  {
     title: "Mức độ cảnh báo (Severity)",
     url: "/config/severity",
-    icon: Calendar,
+    icon: AlertTriangle,
   },
     {
     title: "Quy tắc cảnh báo (Alert Rules)",
