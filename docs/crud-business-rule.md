@@ -14,11 +14,60 @@ Port API Backend không phải 8080 mà mặc định 8002 nhé.
 Lưu ý cần có authen sử dụng fetchWithAuth giống các màn hình khác nhé mới gọi được API backend
 Phần call API phải tuân thủ theo quy định tại các file api-config.ts, api-endpoints.ts
 
-**⚠️ QUAN TRỌNG - Cấu trúc Response:**
-- Đọc kỹ file `docs/API_RESPONSE_STRUCTURE.md` trước khi code
-- Backend sử dụng `data.data` (KHÔNG phải `data.content`)
-- Backend sử dụng `total` (KHÔNG phải `totalElements`)
-- Backend KHÔNG trả về `totalPages` - phải tự tính bằng `Math.ceil(total / limit)`
+**⚠️ QUAN TRỌNG - Cấu trúc Response (ĐÃ LẶP LẠI LỖI NHIỀU LẦN!):**
+
+**Cấu trúc API Response chuẩn:**
+```json
+{
+  "success": true,
+  "statusCode": 200,
+  "message": "success",
+  "data": {
+    "data": [...],      // ← Array items nằm ở data.data (KHÔNG phải data.content)
+    "total": 996,       // ← Total items (KHÔNG phải totalElements)
+    "page": 0,          // ← Current page 0-indexed
+    "size": 10          // ← Page size
+  }
+}
+```
+
+**Quy tắc xử lý trong component:**
+```tsx
+// ❌ SAI - Đã lặp lại nhiều lần
+const items = data?.content || [];
+const totalItems = data?.totalElements || 0;
+const totalPages = data?.totalPages || 0;
+
+// ✅ ĐÚNG - PHẢI dùng cấu trúc này
+const items = data?.data || [];
+const totalItems = data?.total || 0;
+const totalPages = Math.ceil((data?.total || 0) / limit);  // Tự tính totalPages
+```
+
+**Trong TypeScript interface:**
+```tsx
+// ❌ SAI
+export interface PaginatedResponse {
+  content: Item[];
+  totalElements: number;
+  totalPages: number;
+}
+
+// ✅ ĐÚNG
+export interface PaginatedResponse {
+  data: Item[];
+  total: number;
+  page: number;   // 0-indexed
+  size: number;
+}
+```
+
+**Checklist trước khi commit:**
+- [ ] Kiểm tra `items = data?.data` (KHÔNG phải `data?.content`)
+- [ ] Kiểm tra `total = data?.total` (KHÔNG phải `data?.totalElements`)
+- [ ] Kiểm tra tự tính `totalPages = Math.ceil(total / limit)`
+- [ ] Kiểm tra TypeScript interface đúng cấu trúc
+- [ ] Test với data thực từ API trước khi commit
 
 ---
 

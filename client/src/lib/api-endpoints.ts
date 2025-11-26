@@ -260,6 +260,34 @@ export const API_ENDPOINTS = {
     IMPORT: `${API_BASE}/schedule_assignments/import`,
     TEMPLATE: `${API_BASE}/schedule_assignments/template`,
   },
+
+  // Sys Severity (Mức độ cảnh báo)
+  SYS_SEVERITY: {
+    LIST: `${API_BASE}/sys-severity`,
+    DETAIL: (code: string) => `${API_BASE}/sys-severity/${code}`,
+    ACTIVE: `${API_BASE}/sys-severity/active`,
+    CREATE: `${API_BASE}/sys-severity/create`,
+    UPDATE: `${API_BASE}/sys-severity/edit`,
+    DELETE: `${API_BASE}/sys-severity/delete`,
+    COPY: `${API_BASE}/sys-severity/copy`,
+    EXPORT: `${API_BASE}/sys-severity/export`,
+    IMPORT: `${API_BASE}/sys-severity/import`,
+    TEMPLATE: `${API_BASE}/sys-severity/template`,
+  },
+
+  // System Catalog (Danh sách Hệ thống)
+  SYSTEM_CATALOG: {
+    LIST: `${API_BASE}/system-catalog`,
+    DETAIL: (code: string) => `${API_BASE}/system-catalog/${code}`,
+    ACTIVE: `${API_BASE}/system-catalog/active`,
+    CREATE: `${API_BASE}/system-catalog/create`,
+    UPDATE: `${API_BASE}/system-catalog/edit`,
+    DELETE: `${API_BASE}/system-catalog/delete`,
+    COPY: `${API_BASE}/system-catalog/copy`,
+    EXPORT: `${API_BASE}/system-catalog/export`,
+    IMPORT: `${API_BASE}/system-catalog/import`,
+    TEMPLATE: `${API_BASE}/system-catalog/template`,
+  },
 } as const;
 
 // Helper function to build query string

@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Pencil, Trash2, Search, Copy, Upload, Download, FileDown, AlertCircle, AlertTriangle, AlertOctagon, Info, Zap, Bell, LucideIcon } from "lucide-react";
-import { sysSeverityService } from "@/services/sysSeverityService";
+import { Plus, Pencil, Trash2, Search, Copy, Upload, Download, FileDown, Server } from "lucide-react";
+import { systemCatalogService } from "@/services/systemCatalogService";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -31,50 +31,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { SysSeverity, SysSeverityFormData } from "@/types/sys-severity";
+import { SystemCatalog, SystemCatalogFormData } from "@/types/system-catalog";
 
-const iconOptions = [
-  'alert-circle',
-  'alert-triangle',
-  'alert-octagon',
-  'info',
-  'zap',
-  'bell',
-  'alert',
-];
-
-// Icon mapping
-const iconMap: Record<string, LucideIcon> = {
-  'alert-circle': AlertCircle,
-  'alert-triangle': AlertTriangle,
-  'alert-octagon': AlertOctagon,
-  'info': Info,
-  'zap': Zap,
-  'bell': Bell,
-  'alert': AlertTriangle, // Fallback to AlertTriangle
-};
-
-// Helper function to render icon
-const renderIcon = (iconName?: string) => {
-  if (!iconName) return null;
-  const IconComponent = iconMap[iconName] || AlertCircle;
-  return <IconComponent className="h-4 w-4" />;
-};
-
-export default function ConfigSeverity() {
+export default function SystemCatalogManagement() {
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
   const [keyword, setKeyword] = useState("");
@@ -82,36 +47,34 @@ export default function ConfigSeverity() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState<SysSeverity | null>(null);
+  const [editingItem, setEditingItem] = useState<SystemCatalog | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [formData, setFormData] = useState<SysSeverityFormData>({
-    severityCode: "",
-    severityName: "",
+  const [formData, setFormData] = useState<SystemCatalogFormData>({
+    code: "",
+    name: "",
+    echatId: "",
+    ipAddress: "",
+    polestarCode: "",
+    systemLevelId: null,
     description: "",
-    colorCode: "#EF4444",
-    iconName: "alert-circle",
-    priorityLevel: 3,
-    clearCycleCount: 2,
-    clearTimeoutMinutes: 10,
-    clearNotificationEnabled: true,
     isActive: true,
   });
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch severities
+  // Fetch system catalogs
   const { data, isLoading } = useQuery({
-    queryKey: ["sys-severities", page, limit, keyword],
+    queryKey: ["system-catalogs", page, limit, keyword],
     queryFn: async () => {
-      const result = await sysSeverityService.getAll({
+      const result = await systemCatalogService.getAll({
         page,
         limit,
         keyword: keyword || undefined,
-        sort_dir: 'desc',
-        sort_key: 'priorityLevel',
+        sort_dir: 'asc',
+        sort_key: 'name',
       });
       return result.data;
     },
@@ -119,25 +82,23 @@ export default function ConfigSeverity() {
 
   // Create mutation
   const createMutation = useMutation({
-    mutationFn: async (data: SysSeverityFormData) => {
-      return sysSeverityService.create({
-        severityCode: data.severityCode,
-        severityName: data.severityName,
+    mutationFn: async (data: SystemCatalogFormData) => {
+      return systemCatalogService.create({
+        code: data.code,
+        name: data.name,
+        echatId: data.echatId || undefined,
+        ipAddress: data.ipAddress || undefined,
+        polestarCode: data.polestarCode || undefined,
+        systemLevelId: data.systemLevelId || undefined,
         description: data.description || undefined,
-        colorCode: data.colorCode || undefined,
-        iconName: data.iconName || undefined,
-        priorityLevel: data.priorityLevel,
-        clearCycleCount: data.clearCycleCount || undefined,
-        clearTimeoutMinutes: data.clearTimeoutMinutes || undefined,
-        clearNotificationEnabled: data.clearNotificationEnabled,
         isActive: data.isActive,
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["sys-severities"] });
+      queryClient.invalidateQueries({ queryKey: ["system-catalogs"] });
       setIsDialogOpen(false);
       resetForm();
-      toast({ title: "Thành công", description: "Đã thêm mức độ cảnh báo" });
+      toast({ title: "Thành công", description: "Đã thêm hệ thống" });
     },
     onError: (error: Error) => {
       toast({ title: "Lỗi", description: error.message, variant: "destructive" });
@@ -146,25 +107,24 @@ export default function ConfigSeverity() {
 
   // Update mutation
   const updateMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: SysSeverityFormData }) => {
-      return sysSeverityService.update(id, {
-        severityName: data.severityName,
+    mutationFn: async ({ id, data }: { id: string; data: SystemCatalogFormData }) => {
+      return systemCatalogService.update(id, {
+        code: data.code,
+        name: data.name,
+        echatId: data.echatId || undefined,
+        ipAddress: data.ipAddress || undefined,
+        polestarCode: data.polestarCode || undefined,
+        systemLevelId: data.systemLevelId || undefined,
         description: data.description || undefined,
-        colorCode: data.colorCode || undefined,
-        iconName: data.iconName || undefined,
-        priorityLevel: data.priorityLevel,
-        clearCycleCount: data.clearCycleCount || undefined,
-        clearTimeoutMinutes: data.clearTimeoutMinutes || undefined,
-        clearNotificationEnabled: data.clearNotificationEnabled,
         isActive: data.isActive,
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["sys-severities"] });
+      queryClient.invalidateQueries({ queryKey: ["system-catalogs"] });
       setIsDialogOpen(false);
       setEditingItem(null);
       resetForm();
-      toast({ title: "Thành công", description: "Đã cập nhật mức độ cảnh báo" });
+      toast({ title: "Thành công", description: "Đã cập nhật hệ thống" });
     },
     onError: (error: Error) => {
       toast({ title: "Lỗi", description: error.message, variant: "destructive" });
@@ -174,13 +134,13 @@ export default function ConfigSeverity() {
   // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      return sysSeverityService.delete([id]);
+      return systemCatalogService.delete([id]);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["sys-severities"] });
+      queryClient.invalidateQueries({ queryKey: ["system-catalogs"] });
       setIsDeleteDialogOpen(false);
       setDeletingId(null);
-      toast({ title: "Thành công", description: "Đã xóa mức độ cảnh báo" });
+      toast({ title: "Thành công", description: "Đã xóa hệ thống" });
     },
     onError: (error: Error) => {
       toast({ title: "Lỗi", description: error.message, variant: "destructive" });
@@ -190,13 +150,13 @@ export default function ConfigSeverity() {
   // Bulk delete mutation
   const bulkDeleteMutation = useMutation({
     mutationFn: async (ids: string[]) => {
-      return sysSeverityService.delete(ids);
+      return systemCatalogService.delete(ids);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["sys-severities"] });
+      queryClient.invalidateQueries({ queryKey: ["system-catalogs"] });
       setIsBulkDeleteDialogOpen(false);
       setSelectedItems(new Set());
-      toast({ title: "Thành công", description: "Đã xóa các mức độ cảnh báo đã chọn" });
+      toast({ title: "Thành công", description: "Đã xóa các hệ thống đã chọn" });
     },
     onError: (error: Error) => {
       toast({ title: "Lỗi", description: error.message, variant: "destructive" });
@@ -206,11 +166,11 @@ export default function ConfigSeverity() {
   // Copy mutation
   const copyMutation = useMutation({
     mutationFn: async (id: string) => {
-      return sysSeverityService.copy(id);
+      return systemCatalogService.copy(id);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["sys-severities"] });
-      toast({ title: "Thành công", description: "Đã sao chép mức độ cảnh báo" });
+      queryClient.invalidateQueries({ queryKey: ["system-catalogs"] });
+      toast({ title: "Thành công", description: "Đã sao chép hệ thống" });
     },
     onError: (error: Error) => {
       toast({ title: "Lỗi", description: error.message, variant: "destructive" });
@@ -220,10 +180,10 @@ export default function ConfigSeverity() {
   // Import mutation
   const importMutation = useMutation({
     mutationFn: async (file: File) => {
-      return sysSeverityService.importFromExcel(file);
+      return systemCatalogService.importFromExcel(file);
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["sys-severities"] });
+      queryClient.invalidateQueries({ queryKey: ["system-catalogs"] });
       toast({ title: "Thành công", description: data.message || "Đã import dữ liệu" });
     },
     onError: (error: Error) => {
@@ -233,15 +193,13 @@ export default function ConfigSeverity() {
 
   const resetForm = () => {
     setFormData({
-      severityCode: "",
-      severityName: "",
+      code: "",
+      name: "",
+      echatId: "",
+      ipAddress: "",
+      polestarCode: "",
+      systemLevelId: null,
       description: "",
-      colorCode: "#EF4444",
-      iconName: "alert-circle",
-      priorityLevel: 3,
-      clearCycleCount: 2,
-      clearTimeoutMinutes: 10,
-      clearNotificationEnabled: true,
       isActive: true,
     });
   };
@@ -252,18 +210,16 @@ export default function ConfigSeverity() {
     setIsDialogOpen(true);
   };
 
-  const handleEditClick = (item: SysSeverity) => {
+  const handleEditClick = (item: SystemCatalog) => {
     setEditingItem(item);
     setFormData({
-      severityCode: item.severityCode,
-      severityName: item.severityName,
+      code: item.code,
+      name: item.name,
+      echatId: item.echatId || "",
+      ipAddress: item.ipAddress || "",
+      polestarCode: item.polestarCode || "",
+      systemLevelId: item.systemLevelId || null,
       description: item.description || "",
-      colorCode: item.colorCode || "#EF4444",
-      iconName: item.iconName || "alert-circle",
-      priorityLevel: item.priorityLevel,
-      clearCycleCount: item.clearCycleCount || 2,
-      clearTimeoutMinutes: item.clearTimeoutMinutes || 10,
-      clearNotificationEnabled: item.clearNotificationEnabled,
       isActive: item.isActive,
     });
     setIsDialogOpen(true);
@@ -296,7 +252,7 @@ export default function ConfigSeverity() {
 
   const handleSelectAll = (checked: boolean) => {
     if (checked && data) {
-      setSelectedItems(new Set(data.data.map((item) => item.id)));
+      setSelectedItems(new Set(data.content.map((item) => item.id)));
     } else {
       setSelectedItems(new Set());
     }
@@ -322,17 +278,17 @@ export default function ConfigSeverity() {
     bulkDeleteMutation.mutate(Array.from(selectedItems));
   };
 
-  const handleCopy = async (item: SysSeverity) => {
+  const handleCopy = async (item: SystemCatalog) => {
     copyMutation.mutate(item.id);
   };
 
   const handleExport = async () => {
     try {
-      const blob = await sysSeverityService.exportToExcel();
+      const blob = await systemCatalogService.exportToExcel();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `sys_severity_export_${new Date().toISOString()}.xlsx`;
+      a.download = `system_catalog_export_${new Date().toISOString()}.xlsx`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -354,11 +310,11 @@ export default function ConfigSeverity() {
 
   const handleDownloadTemplate = async () => {
     try {
-      const blob = await sysSeverityService.downloadTemplate();
+      const blob = await systemCatalogService.downloadTemplate();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "sys_severity_template.xlsx";
+      a.download = "system_catalog_template.xlsx";
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -372,22 +328,22 @@ export default function ConfigSeverity() {
 
   const items = data?.data || [];
   const totalItems = data?.total || 0;
-  const totalPages = Math.ceil(totalItems / limit);
+  const totalPages = Math.ceil((data?.total || 0) / limit);
 
   return (
     <div className="space-y-4">
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <AlertCircle className="h-5 w-5" />
-            Quản lý Mức độ Cảnh báo (Severity)
+            <Server className="h-5 w-5" />
+            Quản lý Danh sách Hệ thống
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-between mb-4 gap-4">
             <div className="flex items-center gap-2 flex-1 max-w-md">
               <Input
-                placeholder="Tìm kiếm theo mã, tên, mô tả..."
+                placeholder="Tìm kiếm theo mã, tên, IP, EChat ID, Polestar..."
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSearch()}
@@ -449,13 +405,12 @@ export default function ConfigSeverity() {
                       onCheckedChange={handleSelectAll}
                     />
                   </TableHead>
-                  <TableHead>Mã Severity</TableHead>
-                  <TableHead>Tên</TableHead>
-                  <TableHead>Mức ưu tiên</TableHead>
-                  <TableHead>Màu sắc</TableHead>
-                  <TableHead>Icon</TableHead>
-                  <TableHead>Chu kỳ Clear</TableHead>
-                  <TableHead>Timeout Clear</TableHead>
+                  <TableHead>Mã hệ thống</TableHead>
+                  <TableHead>Tên hệ thống</TableHead>
+                  <TableHead>EChat ID</TableHead>
+                  <TableHead>Địa chỉ IP</TableHead>
+                  <TableHead>Mã Polestar</TableHead>
+                  <TableHead>Cấp độ</TableHead>
                   <TableHead>Trạng thái</TableHead>
                   <TableHead className="text-right">Thao tác</TableHead>
                 </TableRow>
@@ -463,16 +418,16 @@ export default function ConfigSeverity() {
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={10} className="text-center">
+                    <TableCell colSpan={9} className="text-center">
                       Đang tải...
                     </TableCell>
                   </TableRow>
                 ) : items.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={10} className="text-center text-muted-foreground">
+                    <TableCell colSpan={9} className="text-center text-muted-foreground">
                       {keyword
                         ? "Không tìm thấy kết quả phù hợp"
-                        : 'Chưa có mức độ cảnh báo nào. Nhấn "Thêm mới" để bắt đầu.'}
+                        : 'Chưa có hệ thống nào. Nhấn "Thêm mới" để bắt đầu.'}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -486,31 +441,19 @@ export default function ConfigSeverity() {
                           }
                         />
                       </TableCell>
-                      <TableCell className="font-medium">{item.severityCode}</TableCell>
-                      <TableCell>{item.severityName}</TableCell>
-                      <TableCell className="text-center">
-                        <Badge variant="outline">{item.priorityLevel}</Badge>
+                      <TableCell className="font-medium">{item.code}</TableCell>
+                      <TableCell>{item.name}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {item.echatId || "-"}
                       </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <div
-                            className="w-6 h-6 rounded border"
-                            style={{ backgroundColor: item.colorCode || '#cccccc' }}
-                          />
-                          <span className="text-sm text-muted-foreground">{item.colorCode}</span>
-                        </div>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {item.ipAddress || "-"}
                       </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          {renderIcon(item.iconName)}
-                          <span className="text-sm text-muted-foreground">{item.iconName || '-'}</span>
-                        </div>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {item.polestarCode || "-"}
                       </TableCell>
-                      <TableCell className="text-center text-sm">
-                        {item.clearCycleCount ? `${item.clearCycleCount} chu kỳ` : '-'}
-                      </TableCell>
-                      <TableCell className="text-center text-sm">
-                        {item.clearTimeoutMinutes ? `${item.clearTimeoutMinutes} phút` : '-'}
+                      <TableCell className="text-sm">
+                        {item.systemLevel?.level || "-"}
                       </TableCell>
                       <TableCell>
                         {item.isActive ? (
@@ -593,41 +536,88 @@ export default function ConfigSeverity() {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>
-              {editingItem ? "Cập nhật Mức độ Cảnh báo" : "Thêm Mức độ Cảnh báo"}
+              {editingItem ? "Cập nhật Hệ thống" : "Thêm Hệ thống"}
             </DialogTitle>
             <DialogDescription>
               {editingItem
-                ? "Cập nhật thông tin mức độ cảnh báo"
-                : "Nhập thông tin mức độ cảnh báo mới"}
+                ? "Cập nhật thông tin hệ thống"
+                : "Nhập thông tin hệ thống mới"}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit}>
             <div className="space-y-4 py-4">
-              {/* Basic Info */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="severityCode">
-                    Mã Severity <span className="text-destructive">*</span>
+                  <Label htmlFor="code">
+                    Mã hệ thống <span className="text-destructive">*</span>
                   </Label>
                   <Input
-                    id="severityCode"
-                    value={formData.severityCode}
-                    onChange={(e) => setFormData({ ...formData, severityCode: e.target.value.toUpperCase() })}
-                    placeholder="CRITICAL"
+                    id="code"
+                    value={formData.code}
+                    onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+                    placeholder="SYS001"
                     required
                     disabled={!!editingItem}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="severityName">
-                    Tên Severity <span className="text-destructive">*</span>
+                  <Label htmlFor="name">
+                    Tên hệ thống <span className="text-destructive">*</span>
                   </Label>
                   <Input
-                    id="severityName"
-                    value={formData.severityName}
-                    onChange={(e) => setFormData({ ...formData, severityName: e.target.value })}
-                    placeholder="Nghiêm trọng"
+                    id="name"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    placeholder="Hệ thống cảnh báo trung tâm"
                     required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="echatId">EChat ID</Label>
+                  <Input
+                    id="echatId"
+                    value={formData.echatId}
+                    onChange={(e) => setFormData({ ...formData, echatId: e.target.value })}
+                    placeholder="ECHAT001"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="ipAddress">Địa chỉ IP</Label>
+                  <Input
+                    id="ipAddress"
+                    value={formData.ipAddress}
+                    onChange={(e) => setFormData({ ...formData, ipAddress: e.target.value })}
+                    placeholder="192.168.1.100"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="polestarCode">Mã Polestar</Label>
+                  <Input
+                    id="polestarCode"
+                    value={formData.polestarCode}
+                    onChange={(e) => setFormData({ ...formData, polestarCode: e.target.value })}
+                    placeholder="PS001"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="systemLevelId">ID Cấp độ hệ thống</Label>
+                  <Input
+                    id="systemLevelId"
+                    type="number"
+                    value={formData.systemLevelId || ""}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        systemLevelId: e.target.value ? parseInt(e.target.value) : null,
+                      })
+                    }
+                    placeholder="1"
                   />
                 </div>
               </div>
@@ -638,114 +628,20 @@ export default function ConfigSeverity() {
                   id="description"
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Mô tả chi tiết..."
-                  rows={2}
+                  placeholder="Mô tả chi tiết về hệ thống..."
+                  rows={3}
                 />
               </div>
 
-              {/* UI Display */}
-              <div className="grid grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="colorCode">Màu sắc</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="colorCode"
-                      type="color"
-                      value={formData.colorCode}
-                      onChange={(e) => setFormData({ ...formData, colorCode: e.target.value })}
-                      className="w-16 h-10"
-                    />
-                    <Input
-                      value={formData.colorCode}
-                      onChange={(e) => setFormData({ ...formData, colorCode: e.target.value })}
-                      placeholder="#EF4444"
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="iconName">Icon</Label>
-                  <div className="flex items-center gap-2">
-                    <div className="flex items-center justify-center w-10 h-10 border rounded">
-                      {renderIcon(formData.iconName)}
-                    </div>
-                    <Select
-                      value={formData.iconName}
-                      onValueChange={(value) => setFormData({ ...formData, iconName: value })}
-                    >
-                      <SelectTrigger className="flex-1">
-                        <SelectValue placeholder="Chọn icon" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {iconOptions.map((icon) => (
-                          <SelectItem key={icon} value={icon}>
-                            <div className="flex items-center gap-2">
-                              {renderIcon(icon)}
-                              <span>{icon}</span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="priorityLevel">
-                    Mức ưu tiên <span className="text-destructive">*</span>
-                  </Label>
-                  <Input
-                    id="priorityLevel"
-                    type="number"
-                    min={1}
-                    max={5}
-                    value={formData.priorityLevel}
-                    onChange={(e) => setFormData({ ...formData, priorityLevel: parseInt(e.target.value) })}
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Clear Config */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="clearCycleCount">Số chu kỳ Clear</Label>
-                  <Input
-                    id="clearCycleCount"
-                    type="number"
-                    min={1}
-                    value={formData.clearCycleCount}
-                    onChange={(e) => setFormData({ ...formData, clearCycleCount: parseInt(e.target.value) })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="clearTimeoutMinutes">Timeout Clear (phút)</Label>
-                  <Input
-                    id="clearTimeoutMinutes"
-                    type="number"
-                    min={1}
-                    value={formData.clearTimeoutMinutes}
-                    onChange={(e) => setFormData({ ...formData, clearTimeoutMinutes: parseInt(e.target.value) })}
-                  />
-                </div>
-              </div>
-
-              {/* Switches */}
-              <div className="space-y-2">
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="clearNotificationEnabled"
-                    checked={formData.clearNotificationEnabled}
-                    onCheckedChange={(checked) => setFormData({ ...formData, clearNotificationEnabled: checked })}
-                  />
-                  <Label htmlFor="clearNotificationEnabled">Bật thông báo khi Clear</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="isActive"
-                    checked={formData.isActive}
-                    onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
-                  />
-                  <Label htmlFor="isActive">Kích hoạt</Label>
-                </div>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="isActive"
+                  checked={formData.isActive}
+                  onCheckedChange={(checked) =>
+                    setFormData({ ...formData, isActive: checked })
+                  }
+                />
+                <Label htmlFor="isActive">Kích hoạt</Label>
               </div>
             </div>
             <DialogFooter>
@@ -769,7 +665,7 @@ export default function ConfigSeverity() {
           <AlertDialogHeader>
             <AlertDialogTitle>Xác nhận xóa</AlertDialogTitle>
             <AlertDialogDescription>
-              Bạn có chắc chắn muốn xóa mức độ cảnh báo này? Hành động này không thể hoàn tác.
+              Bạn có chắc chắn muốn xóa hệ thống này? Hành động này không thể hoàn tác.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -790,8 +686,8 @@ export default function ConfigSeverity() {
           <AlertDialogHeader>
             <AlertDialogTitle>Xác nhận xóa nhiều</AlertDialogTitle>
             <AlertDialogDescription>
-              Bạn có chắc chắn muốn xóa {selectedItems.size} mức độ cảnh báo đã chọn? Hành động này không
-              thể hoàn tác.
+              Bạn có chắc chắn muốn xóa {selectedItems.size} hệ thống đã chọn? Hành động này
+              không thể hoàn tác.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

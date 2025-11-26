@@ -117,7 +117,7 @@ const configMenuItems = [
   },
    {
     title: "Quản lý hệ thống (Systems)",
-    url: "/config/systems",
+    url: "/config/system-catalog",
     icon: Monitor,
   },
 

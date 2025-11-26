@@ -20,6 +20,7 @@ import ConfigRoles from "@/pages/ConfigRoles";
 import ConfigAlertFrequency from "@/pages/ConfigAlertFrequency";
 import ConfigSeverity from "@/pages/ConfigSeverity";
 import ConfigContacts from "@/pages/ConfigContacts";
+import SystemCatalogManagement from "@/pages/SystemCatalogManagement";
 import ConfigGroupContacts from "@/pages/ConfigGroupContacts";
 import ConfigGroups from "@/pages/ConfigGroups";
 import ConfigRules from "@/pages/ConfigRules";
@@ -44,6 +45,7 @@ function Router() {
 
       {/* II. Cấu hình hệ thống */}
       <Route path="/config/systems" component={ConfigSystems} />
+      <Route path="/config/system-catalog" component={SystemCatalogManagement} />
       <Route path="/config/operation-types" component={ConfigOperationTypes} />
       <Route path="/config/system-levels" component={ConfigSystemLevel} />
       <Route path="/config/alert-frequency" component={ConfigAlertFrequency} />

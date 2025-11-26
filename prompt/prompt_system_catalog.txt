@@ -1,0 +1,2 @@
+Tiếp theo, code lại cho tôi màn hình Quản lý Danh sách hệ thống (System Catalog), tài liệu backend ở docs>SYSTEM_CATALOG_API_GUIDE.md. 
+Lưu ý tuân thủ các rule theo mô tả ở docs>crud-business-rule.md nhé.
