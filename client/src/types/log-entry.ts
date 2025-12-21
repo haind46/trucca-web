@@ -24,23 +24,18 @@ export interface LogEntry {
   updatedAt: string;
 }
 
+/**
+ * LogEntryFilters - API đã được đơn giản hóa
+ * Chỉ còn 7 filter parameters chính theo API_FILTER_REWRITE.md
+ */
 export interface LogEntryFilters {
   page?: number;
   limit?: number;
-  keyword?: string;
-  severity?: string;
-  occurredAtFrom?: string;
-  occurredAtTo?: string;
-  systemName?: string;
-  hostName?: string;
-  hostIp?: string;
-  resourceName?: string;
-  resourceType?: string;
-  alarmName?: string;
-  eventType?: string;
-  eventSource?: string;
-  errorType?: string;
-  analyzedBy?: string;
+  keyword?: string;              // Tìm kiếm trong system_name, host_name, alarm_name, event_detail
+  severity?: string;             // CRITICAL, HIGH, MEDIUM, LOW, INFO
+  occurredAtFrom?: string;       // ISO format: 2025-12-20T10:22:00
+  occurredAtTo?: string;         // ISO format: 2025-12-21T10:22:00
+  systemName?: string;           // Exact match
   sort_dir?: "asc" | "desc";
   sort_key?: string;
 }

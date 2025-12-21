@@ -17,15 +17,55 @@ import {
   Calendar,
   Server,
   AlertTriangle,
+  AlertCircle,
+  AlertOctagon,
+  Info,
+  Zap,
+  Bell,
   Eye,
   RefreshCw,
   ScrollText,
+  ChevronLeft,
+  ChevronRight,
+  type LucideIcon,
 } from "lucide-react";
 import { logEntryService } from "@/services/logEntryService";
 import { sysSeverityService } from "@/services/sysSeverityService";
 import { useToast } from "@/hooks/use-toast";
 import type { LogEntry, LogEntryFilters } from "@/types/log-entry";
 import type { SysSeverity } from "@/types/sys-severity";
+
+// Icon mapping (same as ConfigSeverity)
+const iconMap: Record<string, LucideIcon> = {
+  'alert-circle': AlertCircle,
+  'alert-triangle': AlertTriangle,
+  'alert-octagon': AlertOctagon,
+  'info': Info,
+  'zap': Zap,
+  'bell': Bell,
+  'alert': AlertTriangle, // Fallback
+};
+
+// Mapping từ severity code trong log sang severity code trong sys_severity
+// (Log data có thể dùng tên khác với cấu hình severity)
+const severityCodeMapping: Record<string, string> = {
+  // Map từ log severity -> sys_severity code
+  'critical': 'CRITICAL',
+  'high': 'CRITICAL',      // High -> CRITICAL
+  'major': 'MAJOR',
+  'medium': 'MAJOR',       // Medium -> MAJOR
+  'minor': 'MINOR',
+  'low': 'MINOR',          // Low -> MINOR
+  'warning': 'WARNING',
+  'down': 'DOWN',
+};
+
+// Helper function to render icon
+const renderIcon = (iconName?: string, className?: string) => {
+  if (!iconName) return <AlertCircle className={className || "h-5 w-5"} />;
+  const IconComponent = iconMap[iconName] || AlertCircle;
+  return <IconComponent className={className || "h-5 w-5"} />;
+};
 
 // Format Date object to datetime-local input format: YYYY-MM-DDTHH:mm
 const formatDateTimeForInput = (date: Date) => {
@@ -52,33 +92,29 @@ const formatDateTimeDisplay = (dateInput: string | Date) => {
 export default function LogEntriesManagement() {
   const { toast } = useToast();
 
-  // Get today's date range (from 00:00 to now)
-  const getTodayDateRange = () => {
-    const today = new Date();
-    const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  // Get date range for the last 24 hours (1 day)
+  const getLastDayDateRange = () => {
+    const now = new Date();
+    const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000); // 24 hours ago
 
     return {
-      from: formatDateTimeForInput(startOfDay), // YYYY-MM-DDTHH:mm format
-      to: formatDateTimeForInput(today),
+      from: formatDateTimeForInput(oneDayAgo), // YYYY-MM-DDTHH:mm format
+      to: formatDateTimeForInput(now),
     };
   };
 
-  const todayRange = getTodayDateRange();
+  const lastDayRange = getLastDayDateRange();
 
-  // Filter states - default to today's date range
+  // Filter states - đơn giản hóa theo API mới (API_FILTER_REWRITE.md)
+  // Chỉ còn: keyword, severity, occurredAtFrom, occurredAtTo, systemName
   const [filters, setFilters] = useState<LogEntryFilters>({
     page: 1,
     limit: 20,
     keyword: "",
     severity: "",
-    occurredAtFrom: todayRange.from,
-    occurredAtTo: todayRange.to,
+    occurredAtFrom: lastDayRange.from,
+    occurredAtTo: lastDayRange.to,
     systemName: "",
-    hostName: "",
-    hostIp: "",
-    resourceType: "",
-    eventType: "",
-    errorType: "",
     sort_dir: "desc",
     sort_key: "occurred_at",
   });
@@ -136,17 +172,15 @@ export default function LogEntriesManagement() {
     },
   });
 
-  // Query for statistics (total + severity counts) - NEW API
+  // Query for statistics (total + severity counts) - Đơn giản hóa theo API mới
   const { data: statisticsData } = useQuery({
-    queryKey: ["log-entries-statistics", filters.occurredAtFrom, filters.occurredAtTo, filters.systemName, filters.hostName, filters.hostIp],
+    queryKey: ["log-entries-statistics", filters.occurredAtFrom, filters.occurredAtTo, filters.systemName],
     queryFn: async () => {
       try {
         return await logEntryService.getStatistics(
           filters.occurredAtFrom || '',
           filters.occurredAtTo || '',
-          filters.systemName,
-          filters.hostName,
-          filters.hostIp
+          filters.systemName
         );
       } catch (err: any) {
         if (err.message?.includes("403")) throw err;
@@ -176,41 +210,65 @@ export default function LogEntriesManagement() {
   const totalCount = stats.total || 0;
 
   // Map severity counts from API response to display format
-  // severityCounts is already sorted by priority from backend
-  const severityStats = stats.severityCounts.slice(0, 5).map((item: any) => {
-    // Find the matching severity object from active severities
-    const severity = activeSeverities.find(s => s.severityCode === item.severityCode) || {
-      severityCode: item.severityCode,
-      severityName: item.severityName,
-      colorCode: item.colorCode,
-      priorityLevel: item.priorityLevel,
-    };
+  const severityStats = (stats.severityCounts || [])
+    .map((item: any) => {
+      // Get severity code from statistics API
+      const rawSeverityCode = (item.severityCode || item.severity_code || item.severity || '').toString().trim();
 
-    return {
-      severity,
-      count: item.count || 0,
-    };
-  });
+      // Map to sys_severity code (e.g., "High" -> "CRITICAL", "Medium" -> "MAJOR")
+      const lowerCode = rawSeverityCode.toLowerCase();
+      const mappedCode = severityCodeMapping[lowerCode] || rawSeverityCode.toUpperCase();
+
+      // Find the matching severity object from active severities (case-insensitive)
+      const matchedSeverity = activeSeverities.find(
+        s => s.severityCode?.toLowerCase() === mappedCode.toLowerCase()
+      );
+
+      // Use matched severity for full info (including iconName, colorCode)
+      const severity: SysSeverity = matchedSeverity
+        ? {
+            ...matchedSeverity,
+            // Keep the original name from statistics API for display
+            severityName: item.severityName || matchedSeverity.severityName,
+          }
+        : {
+            id: '',
+            severityCode: rawSeverityCode || 'UNKNOWN',
+            severityName: item.severityName || rawSeverityCode || 'Unknown',
+            colorCode: item.colorCode !== '#999999' ? item.colorCode : '#6B7280',
+            iconName: 'alert-circle',
+            priorityLevel: item.priorityLevel || 0,
+            clearNotificationEnabled: false,
+            isActive: true,
+            createdAt: '',
+          };
+
+      return {
+        severity,
+        count: item.count || 0,
+      };
+    })
+    // Sort by priority level descending (highest priority first)
+    .sort((a, b) => (b.severity.priorityLevel || 0) - (a.severity.priorityLevel || 0))
+    .slice(0, 5);
 
   const handleApplyFilters = () => {
-    setFilters({ ...filters, page: 1 });
+    // Reset to page 1 and force refetch
+    setFilters(prev => ({ ...prev, page: 1 }));
+    // Force refetch after state update
+    setTimeout(() => refetch(), 0);
   };
 
   const handleResetFilters = () => {
-    const todayRange = getTodayDateRange();
+    const lastDayRange = getLastDayDateRange();
     setFilters({
       page: 1,
       limit: 20,
       keyword: "",
       severity: "",
-      occurredAtFrom: todayRange.from,
-      occurredAtTo: todayRange.to,
+      occurredAtFrom: lastDayRange.from,
+      occurredAtTo: lastDayRange.to,
       systemName: "",
-      hostName: "",
-      hostIp: "",
-      resourceType: "",
-      eventType: "",
-      errorType: "",
       sort_dir: "desc",
       sort_key: "occurred_at",
     });
@@ -299,6 +357,18 @@ export default function LogEntriesManagement() {
         </div>
       )}
 
+      {/* Toggle Filter Button - Mobile friendly */}
+      <div className="flex justify-end lg:hidden">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setIsFilterOpen(!isFilterOpen)}
+        >
+          <Filter className="h-4 w-4 mr-2" />
+          {isFilterOpen ? "Ẩn bộ lọc" : "Hiện bộ lọc"}
+        </Button>
+      </div>
+
       {/* Stats Cards - Compact single row, max 5 severity types by priority */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
         {/* Total Card */}
@@ -320,13 +390,13 @@ export default function LogEntriesManagement() {
             <CardContent className="pt-4 pb-4">
               <div className="flex items-center gap-2">
                 <div
-                  className="h-5 w-5 flex items-center justify-center flex-shrink-0"
+                  className="flex items-center justify-center flex-shrink-0"
                   style={{ color: severity.colorCode || '#6B7280' }}
                 >
-                  <AlertTriangle className="h-5 w-5" />
+                  {renderIcon(severity.iconName, "h-5 w-5")}
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs text-muted-foreground truncate">{severity.severityCode}</p>
+                  <p className="text-xs text-muted-foreground truncate">{severity.severityName || severity.severityCode}</p>
                   <p
                     className="text-xl font-bold"
                     style={{ color: severity.colorCode || '#6B7280' }}
@@ -421,56 +491,16 @@ export default function LogEntriesManagement() {
 
                 <Separator />
 
-                {/* System & Host */}
+                {/* System Name - Chỉ giữ lại filter này theo API mới */}
                 <div className="space-y-2">
                   <Label className="text-xs font-semibold flex items-center gap-1">
                     <Server className="h-3 w-3" />
                     Hệ thống
                   </Label>
                   <Input
-                    placeholder="Tên hệ thống"
+                    placeholder="Tên hệ thống (exact match)"
                     value={filters.systemName}
                     onChange={(e) => setFilters({ ...filters, systemName: e.target.value })}
-                  />
-                  <Input
-                    placeholder="Host name"
-                    value={filters.hostName}
-                    onChange={(e) => setFilters({ ...filters, hostName: e.target.value })}
-                  />
-                  <Input
-                    placeholder="Host IP"
-                    value={filters.hostIp}
-                    onChange={(e) => setFilters({ ...filters, hostIp: e.target.value })}
-                  />
-                </div>
-
-                <Separator />
-
-                {/* Resource & Event */}
-                <div className="space-y-2">
-                  <Label className="text-xs font-semibold">Loại tài nguyên</Label>
-                  <Input
-                    placeholder="Resource Type"
-                    value={filters.resourceType}
-                    onChange={(e) => setFilters({ ...filters, resourceType: e.target.value })}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-xs font-semibold">Loại sự kiện</Label>
-                  <Input
-                    placeholder="Event Type"
-                    value={filters.eventType}
-                    onChange={(e) => setFilters({ ...filters, eventType: e.target.value })}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-xs font-semibold">Loại lỗi</Label>
-                  <Input
-                    placeholder="Error Type"
-                    value={filters.errorType}
-                    onChange={(e) => setFilters({ ...filters, errorType: e.target.value })}
                   />
                 </div>
 

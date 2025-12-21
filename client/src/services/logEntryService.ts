@@ -17,44 +17,39 @@ export const logEntryService = {
     return response.json();
   },
 
-  // Filter log entries with advanced criteria
+  /**
+   * Filter log entries - API đã được đơn giản hóa theo API_FILTER_REWRITE.md
+   * Chỉ còn 7 filter parameters: keyword, severity, occurredAtFrom, occurredAtTo, systemName, sort_dir, sort_key
+   */
   async filter(filters: LogEntryFilters) {
     const params: Record<string, any> = {
       page: filters.page || 1,
-      limit: filters.limit || 10,
+      limit: filters.limit || 20,
       sort_dir: filters.sort_dir || "desc",
       sort_key: filters.sort_key || "occurred_at",
     };
 
-    // Add optional filters
+    // Add optional filters (chỉ 5 filters chính theo API mới)
     if (filters.keyword) params.keyword = filters.keyword;
     if (filters.severity) params.severity = filters.severity;
     if (filters.occurredAtFrom) params.occurredAtFrom = filters.occurredAtFrom;
     if (filters.occurredAtTo) params.occurredAtTo = filters.occurredAtTo;
     if (filters.systemName) params.systemName = filters.systemName;
-    if (filters.hostName) params.hostName = filters.hostName;
-    if (filters.hostIp) params.hostIp = filters.hostIp;
-    if (filters.resourceName) params.resourceName = filters.resourceName;
-    if (filters.resourceType) params.resourceType = filters.resourceType;
-    if (filters.alarmName) params.alarmName = filters.alarmName;
-    if (filters.eventType) params.eventType = filters.eventType;
-    if (filters.eventSource) params.eventSource = filters.eventSource;
-    if (filters.errorType) params.errorType = filters.errorType;
-    if (filters.analyzedBy) params.analyzedBy = filters.analyzedBy;
 
     const response = await fetchWithAuth(`${API_ENDPOINTS.LOG_ENTRIES.FILTER}${buildQueryString(params)}`);
     return response.json();
   },
 
-  // Get statistics (total and severity counts)
-  async getStatistics(occurredAtFrom: string, occurredAtTo: string, systemName?: string, hostName?: string, hostIp?: string) {
-    const params: Record<string, any> = {
-      occurredAtFrom,
-      occurredAtTo,
-    };
+  /**
+   * Get statistics (total and severity counts)
+   * Đơn giản hóa theo API mới - chỉ cần thời gian và systemName
+   */
+  async getStatistics(occurredAtFrom: string, occurredAtTo: string, systemName?: string) {
+    const params: Record<string, any> = {};
+
+    if (occurredAtFrom) params.occurredAtFrom = occurredAtFrom;
+    if (occurredAtTo) params.occurredAtTo = occurredAtTo;
     if (systemName) params.systemName = systemName;
-    if (hostName) params.hostName = hostName;
-    if (hostIp) params.hostIp = hostIp;
 
     const response = await fetchWithAuth(`${API_ENDPOINTS.LOG_ENTRIES.STATISTICS}${buildQueryString(params)}`);
     return response.json();

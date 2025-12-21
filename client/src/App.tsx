@@ -1,4 +1,4 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, Redirect } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -43,7 +43,12 @@ function Router() {
       <Route path="/settings" component={Settings} />
 
       {/* I. Quản trị hệ thống */}
-      <Route path="/" component={Dashboard} />
+      {/* Redirect "/" to Log Entries page */}
+      <Route path="/">
+        <Redirect to="/config/log-entries" />
+      </Route>
+      {/* Dashboard tạm ẩn */}
+      {/* <Route path="/dashboard" component={Dashboard} /> */}
       <Route path="/admin/users" component={UserManagement} />
       <Route path="/admin/user-groups" component={UserGroupManagement} />
       <Route path="/admin/departments" component={DepartmentManagement} />

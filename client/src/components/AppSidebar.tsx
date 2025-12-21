@@ -1,5 +1,5 @@
 import {
-  LayoutDashboard,
+  // LayoutDashboard, // Tạm ẩn Dashboard
   Settings,
   Users,
   UserCircle,
@@ -53,11 +53,12 @@ import { userProfileService } from "@/services/userProfileService";
 
 // I. Quản trị hệ thống
 const adminMenuItems = [
-  {
-    title: "Dashboard",
-    url: "/",
-    icon: LayoutDashboard,
-  },
+  // Dashboard tạm ẩn
+  // {
+  //   title: "Dashboard",
+  //   url: "/",
+  //   icon: LayoutDashboard,
+  // },
   {
     title: "Quản lý người dùng",
     url: "/admin/users",
