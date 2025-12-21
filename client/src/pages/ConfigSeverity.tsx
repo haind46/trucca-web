@@ -93,7 +93,6 @@ export default function ConfigSeverity() {
     colorCode: "#EF4444",
     iconName: "alert-circle",
     priorityLevel: 3,
-    clearCycleCount: 2,
     clearTimeoutMinutes: 10,
     clearNotificationEnabled: true,
     isActive: true,
@@ -127,7 +126,6 @@ export default function ConfigSeverity() {
         colorCode: data.colorCode || undefined,
         iconName: data.iconName || undefined,
         priorityLevel: data.priorityLevel,
-        clearCycleCount: data.clearCycleCount || undefined,
         clearTimeoutMinutes: data.clearTimeoutMinutes || undefined,
         clearNotificationEnabled: data.clearNotificationEnabled,
         isActive: data.isActive,
@@ -153,7 +151,6 @@ export default function ConfigSeverity() {
         colorCode: data.colorCode || undefined,
         iconName: data.iconName || undefined,
         priorityLevel: data.priorityLevel,
-        clearCycleCount: data.clearCycleCount || undefined,
         clearTimeoutMinutes: data.clearTimeoutMinutes || undefined,
         clearNotificationEnabled: data.clearNotificationEnabled,
         isActive: data.isActive,
@@ -239,7 +236,6 @@ export default function ConfigSeverity() {
       colorCode: "#EF4444",
       iconName: "alert-circle",
       priorityLevel: 3,
-      clearCycleCount: 2,
       clearTimeoutMinutes: 10,
       clearNotificationEnabled: true,
       isActive: true,
@@ -261,7 +257,6 @@ export default function ConfigSeverity() {
       colorCode: item.colorCode || "#EF4444",
       iconName: item.iconName || "alert-circle",
       priorityLevel: item.priorityLevel,
-      clearCycleCount: item.clearCycleCount || 2,
       clearTimeoutMinutes: item.clearTimeoutMinutes || 10,
       clearNotificationEnabled: item.clearNotificationEnabled,
       isActive: item.isActive,
@@ -454,7 +449,6 @@ export default function ConfigSeverity() {
                   <TableHead>Mức ưu tiên</TableHead>
                   <TableHead>Màu sắc</TableHead>
                   <TableHead>Icon</TableHead>
-                  <TableHead>Chu kỳ Clear</TableHead>
                   <TableHead>Timeout Clear</TableHead>
                   <TableHead>Trạng thái</TableHead>
                   <TableHead className="text-right">Thao tác</TableHead>
@@ -463,13 +457,13 @@ export default function ConfigSeverity() {
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={10} className="text-center">
+                    <TableCell colSpan={9} className="text-center">
                       Đang tải...
                     </TableCell>
                   </TableRow>
                 ) : items.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={10} className="text-center text-muted-foreground">
+                    <TableCell colSpan={9} className="text-center text-muted-foreground">
                       {keyword
                         ? "Không tìm thấy kết quả phù hợp"
                         : 'Chưa có mức độ cảnh báo nào. Nhấn "Thêm mới" để bắt đầu.'}
@@ -505,9 +499,6 @@ export default function ConfigSeverity() {
                           {renderIcon(item.iconName)}
                           <span className="text-sm text-muted-foreground">{item.iconName || '-'}</span>
                         </div>
-                      </TableCell>
-                      <TableCell className="text-center text-sm">
-                        {item.clearCycleCount ? `${item.clearCycleCount} chu kỳ` : '-'}
                       </TableCell>
                       <TableCell className="text-center text-sm">
                         {item.clearTimeoutMinutes ? `${item.clearTimeoutMinutes} phút` : '-'}
@@ -705,27 +696,15 @@ export default function ConfigSeverity() {
               </div>
 
               {/* Clear Config */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="clearCycleCount">Số chu kỳ Clear</Label>
-                  <Input
-                    id="clearCycleCount"
-                    type="number"
-                    min={1}
-                    value={formData.clearCycleCount}
-                    onChange={(e) => setFormData({ ...formData, clearCycleCount: parseInt(e.target.value) })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="clearTimeoutMinutes">Timeout Clear (phút)</Label>
-                  <Input
-                    id="clearTimeoutMinutes"
-                    type="number"
-                    min={1}
-                    value={formData.clearTimeoutMinutes}
-                    onChange={(e) => setFormData({ ...formData, clearTimeoutMinutes: parseInt(e.target.value) })}
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="clearTimeoutMinutes">Timeout Clear (phút)</Label>
+                <Input
+                  id="clearTimeoutMinutes"
+                  type="number"
+                  min={1}
+                  value={formData.clearTimeoutMinutes}
+                  onChange={(e) => setFormData({ ...formData, clearTimeoutMinutes: parseInt(e.target.value) })}
+                />
               </div>
 
               {/* Switches */}

@@ -1,13 +1,11 @@
-import { Switch, Route, useLocation } from "wouter";
+import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
-import { AuthProvider, useAuth } from "@/lib/auth-context";
+import { AuthProvider } from "@/lib/auth-context";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
-import { Button } from "@/components/ui/button";
-import { LogOut } from "lucide-react";
 import Login from "@/pages/Login";
 import Dashboard from "@/pages/Dashboard";
 import Alerts from "@/pages/Alerts";
@@ -24,17 +22,26 @@ import SystemCatalogManagement from "@/pages/SystemCatalogManagement";
 import ConfigGroupContacts from "@/pages/ConfigGroupContacts";
 import ConfigGroups from "@/pages/ConfigGroups";
 import ConfigRules from "@/pages/ConfigRules";
+import ErrorDictionaryManagement from "@/pages/ErrorDictionaryManagement";
+import LogEntriesManagement from "@/pages/LogEntriesManagement";
+import AlertRuleManagement from "@/pages/AlertRuleManagement";
 import UserManagement from "@/pages/UserManagement";
 import UserGroupManagement from "@/pages/UserGroupManagement";
 import DepartmentManagement from "@/pages/DepartmentManagement";
 import PermissionManagement from "@/pages/PermissionManagement";
 import ScheduleManagement from "@/pages/ScheduleManagement";
+import Profile from "@/pages/Profile";
+import Settings from "@/pages/Settings";
 import UnderDevelopment from "@/pages/UnderDevelopment";
 import NotFound from "@/pages/not-found";
 
 function Router() {
   return (
     <Switch>
+      {/* User Profile & Settings */}
+      <Route path="/profile" component={Profile} />
+      <Route path="/settings" component={Settings} />
+
       {/* I. Quản trị hệ thống */}
       <Route path="/" component={Dashboard} />
       <Route path="/admin/users" component={UserManagement} />
@@ -55,6 +62,9 @@ function Router() {
       <Route path="/config/groups" component={ConfigGroups} />
       <Route path="/config/alert-rules" component={ConfigRules} />
       <Route path="/config/schedules" component={ScheduleManagement} />
+      <Route path="/config/error-dictionary" component={ErrorDictionaryManagement} />
+      <Route path="/config/log-entries" component={LogEntriesManagement} />
+      <Route path="/config/alert-rules-management" component={AlertRuleManagement} />
       <Route path="/config/alerts" component={UnderDevelopment} />
       <Route path="/config/notifications" component={UnderDevelopment} />
       <Route path="/config/incidents" component={UnderDevelopment} />
@@ -78,14 +88,6 @@ function Router() {
 }
 
 function ProtectedApp() {
-  const { logout } = useAuth();
-  const [, setLocation] = useLocation();
-
-  const handleLogout = () => {
-    logout();
-    setLocation("/login");
-  };
-
   const style = {
     "--sidebar-width": "16rem",
     "--sidebar-width-icon": "3rem",
@@ -99,15 +101,6 @@ function ProtectedApp() {
           <header className="flex items-center justify-between p-4 border-b">
             <SidebarTrigger data-testid="button-sidebar-toggle" />
             <div className="text-xl font-semibold">MOBIFONE - HỆ THỐNG TRỰC CA AI</div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleLogout}
-              className="gap-2"
-            >
-              <LogOut className="h-4 w-4" />
-              Đăng xuất
-            </Button>
           </header>
           <main className="flex-1 overflow-auto p-6">
             <Router />

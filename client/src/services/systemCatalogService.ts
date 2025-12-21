@@ -12,6 +12,8 @@ import {
   SystemCatalogApiResponse,
   PaginatedSystemCatalogs,
   SystemCatalogQueryParams,
+  SystemCatalogContact,
+  SystemCatalogGroupContact,
 } from '@/types/system-catalog';
 
 export const systemCatalogService = {
@@ -179,5 +181,111 @@ export const systemCatalogService = {
     }
 
     return response.blob();
+  },
+
+  /**
+   * Get assigned contacts for a system catalog
+   */
+  getAssignedContacts: async (id: string): Promise<SystemCatalogApiResponse<SystemCatalogContact[]>> => {
+    const response = await fetchWithAuth(API_ENDPOINTS.SYSTEM_CATALOG.GET_CONTACTS(id));
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch assigned contacts');
+    }
+
+    return response.json();
+  },
+
+  /**
+   * Assign contacts to a system catalog
+   */
+  assignContacts: async (id: string, contactIds: number[]): Promise<SystemCatalogApiResponse<null>> => {
+    const queryParams = contactIds.map(id => `contactIds=${id}`).join('&');
+    const url = `${API_ENDPOINTS.SYSTEM_CATALOG.ASSIGN_CONTACTS(id)}?${queryParams}`;
+
+    const response = await fetchWithAuth(url, {
+      method: 'POST',
+    });
+
+    const result = await response.json();
+
+    if (!response.ok || !result.success) {
+      throw new Error(result.message || 'Failed to assign contacts');
+    }
+
+    return result;
+  },
+
+  /**
+   * Unassign contacts from a system catalog
+   */
+  unassignContacts: async (id: string, contactIds: number[]): Promise<SystemCatalogApiResponse<null>> => {
+    const queryParams = contactIds.map(id => `contactIds=${id}`).join('&');
+    const url = `${API_ENDPOINTS.SYSTEM_CATALOG.UNASSIGN_CONTACTS(id)}?${queryParams}`;
+
+    const response = await fetchWithAuth(url, {
+      method: 'POST',
+    });
+
+    const result = await response.json();
+
+    if (!response.ok || !result.success) {
+      throw new Error(result.message || 'Failed to unassign contacts');
+    }
+
+    return result;
+  },
+
+  /**
+   * Get assigned group contacts for a system catalog
+   */
+  getAssignedGroupContacts: async (id: string): Promise<SystemCatalogApiResponse<SystemCatalogGroupContact[]>> => {
+    const response = await fetchWithAuth(API_ENDPOINTS.SYSTEM_CATALOG.GET_GROUP_CONTACTS(id));
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch assigned group contacts');
+    }
+
+    return response.json();
+  },
+
+  /**
+   * Assign group contacts to a system catalog
+   */
+  assignGroupContacts: async (id: string, groupContactIds: number[]): Promise<SystemCatalogApiResponse<null>> => {
+    const queryParams = groupContactIds.map(id => `groupContactIds=${id}`).join('&');
+    const url = `${API_ENDPOINTS.SYSTEM_CATALOG.ASSIGN_GROUP_CONTACTS(id)}?${queryParams}`;
+
+    const response = await fetchWithAuth(url, {
+      method: 'POST',
+    });
+
+    const result = await response.json();
+
+    if (!response.ok || !result.success) {
+      throw new Error(result.message || 'Failed to assign group contacts');
+    }
+
+    return result;
+  },
+
+  /**
+   * Unassign group contacts from a system catalog
+   */
+  unassignGroupContacts: async (id: string, groupContactIds: number[]): Promise<SystemCatalogApiResponse<null>> => {
+    const queryParams = groupContactIds.map(id => `groupContactIds=${id}`).join('&');
+    const url = `${API_ENDPOINTS.SYSTEM_CATALOG.UNASSIGN_GROUP_CONTACTS(id)}?${queryParams}`;
+
+    const response = await fetchWithAuth(url, {
+      method: 'POST',
+    });
+
+    const result = await response.json();
+
+    if (!response.ok || !result.success) {
+      throw new Error(result.message || 'Failed to unassign group contacts');
+    }
+
+    return result;
   },
 };

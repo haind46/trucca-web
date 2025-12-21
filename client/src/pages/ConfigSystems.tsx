@@ -60,7 +60,7 @@ export default function ConfigSystems() {
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: Partial<InsertSystem> }) => {
-      return await apiRequest("PATCH", `/api/systems/${id}`, data);
+      return await apiRequest("PATCH", API_ENDPOINTS.SYSTEMS.UPDATE(id), data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [API_ENDPOINTS.SYSTEMS.LIST] });
@@ -81,7 +81,7 @@ export default function ConfigSystems() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      return await apiRequest("DELETE", `/api/systems/${id}`);
+      return await apiRequest("DELETE", API_ENDPOINTS.SYSTEMS.DELETE(id));
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [API_ENDPOINTS.SYSTEMS.LIST] });

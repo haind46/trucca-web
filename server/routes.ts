@@ -388,31 +388,31 @@ export async function registerRoutes(app: Express) {
     }
   });
 
-  app.get("/api/stats", async (req, res) => {
-    try {
-      const systems = await storage.getSystems();
-      const activeAlerts = await storage.getActiveAlerts();
-      const incidents = await storage.getIncidents();
+  // app.get("/api/stats", async (req, res) => {
+  //   try {
+  //     const systems = await storage.getSystems();
+  //     const activeAlerts = await storage.getActiveAlerts();
+  //     const incidents = await storage.getIncidents();
       
-      const todayIncidents = incidents.filter(i => {
-        const today = new Date().toDateString();
-        return new Date(i.createdAt).toDateString() === today;
-      });
+  //     const todayIncidents = incidents.filter(i => {
+  //       const today = new Date().toDateString();
+  //       return new Date(i.createdAt).toDateString() === today;
+  //     });
 
-      const resolvedToday = todayIncidents.filter(i => i.status === "resolved");
+  //     const resolvedToday = todayIncidents.filter(i => i.status === "resolved");
       
-      const stats = {
-        totalSystems: systems.length,
-        activeAlerts: activeAlerts.length,
-        resolvedToday: resolvedToday.length,
-        averageResponseTime: "3.2m",
-      };
+  //     const stats = {
+  //       totalSystems: systems.length,
+  //       activeAlerts: activeAlerts.length,
+  //       resolvedToday: resolvedToday.length,
+  //       averageResponseTime: "3.2m",
+  //     };
 
-      res.json(stats);
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
-  });
+  //     res.json(stats);
+  //   } catch (error: any) {
+  //     res.status(500).json({ error: error.message });
+  //   }
+  // });
 
   return app;
 }

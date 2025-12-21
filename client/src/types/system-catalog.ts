@@ -110,3 +110,44 @@ export interface SystemCatalogQueryParams {
   sort_dir?: 'asc' | 'desc';
   sort_key?: string;               // code, name, createdAt, etc. (camelCase)
 }
+
+/**
+ * Contact Assignment Interfaces
+ */
+export interface Contact {
+  id: number;
+  fullName: string;
+  email?: string;
+  phone?: string;
+  departmentId?: number;
+  isActive: boolean;
+}
+
+export interface SystemCatalogContact {
+  id: string;
+  systemCatalogId: string;
+  contactId: number;
+  contact: Contact;
+  createdAt: string;
+  createdBy?: string;
+}
+
+/**
+ * Group Contact Assignment Interfaces
+ */
+export interface GroupContact {
+  id: number;
+  name: string;
+  description?: string;
+  displayOrder?: number;
+  isActive: boolean;
+}
+
+export interface SystemCatalogGroupContact {
+  id: string;
+  systemCatalogId: string;
+  groupContactId: number;
+  groupContact: GroupContact;
+  createdAt: string;
+  createdBy?: string;
+}

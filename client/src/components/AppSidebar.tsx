@@ -24,6 +24,8 @@ import {
   BookOpen,
   ScrollText,
   Monitor,
+  LogOut,
+  ChevronUp,
 } from "lucide-react";
 import {
   Sidebar,
@@ -37,7 +39,17 @@ import {
   SidebarHeader,
   SidebarFooter,
 } from "@/components/ui/sidebar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Link, useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
+import { userProfileService } from "@/services/userProfileService";
 
 // I. Quản trị hệ thống
 const adminMenuItems = [
@@ -96,63 +108,88 @@ const configMenuItems = [
     icon: Tag,
   },
   {
-    title: "Lịch trực ca (Schedules)",
-    url: "/config/schedules",
-    icon: Calendar,
-  },
-  {
     title: "Mức độ cảnh báo (Severity)",
     url: "/config/severity",
     icon: AlertTriangle,
-  },
-    {
-    title: "Quy tắc cảnh báo (Alert Rules)",
-    url: "/config/alert-rules",
-    icon: Settings,
   },
   {
     title: "Tần suất cảnh báo (Alert Frequency)",
     url: "/config/alert-frequency",
     icon: Clock,
   },
-   {
-    title: "Quản lý hệ thống (Systems)",
+  {
+    title: "Lịch trực ca (Schedules)",
+    url: "/config/schedules",
+    icon: Calendar,
+  },
+ {
+    title: "Danh sách hệ thống (System Catalog)",
     url: "/config/system-catalog",
     icon: Monitor,
   },
-
+  {
+    title: "Quy tắc cảnh báo (Alert Rule)",
+    url: "/config/alert-rules-management",
+    icon: Bell,
+  },
 ];
 
 // III. Giám sát & Tra cứu
 const monitorMenuItems = [
   {
     title: "Từ điển mã lỗi (Error Dictionary)",
-    url: "/monitor/error-dictionary",
+    url: "/config/error-dictionary",
     icon: BookOpen,
   },
   {
     title: "Tra cứu Log phát sinh (Log Entries)",
-    url: "/monitor/log-entries",
+    url: "/config/log-entries",
     icon: ScrollText,
   },
+  
 ];
 
 // IV. Báo cáo, thống kê
-const reportMenuItems = [
-  {
-    title: "Báo cáo ca trực",
-    url: "/reports/shifts",
-    icon: FileBarChart,
-  },
-  {
-    title: "Lịch sử cảnh báo",
-    url: "/reports/alert-history",
-    icon: History,
-  },
-];
+// const reportMenuItems = [
+//   {
+//     title: "Báo cáo ca trực",
+//     url: "/reports/shifts",
+//     icon: FileBarChart,
+//   },
+//   {
+//     title: "Lịch sử cảnh báo",
+//     url: "/reports/alert-history",
+//     icon: History,
+//   },
+// ];
 
 export function AppSidebar() {
   const [location] = useLocation();
+
+  // Fetch current user profile
+  const { data: profileData } = useQuery({
+    queryKey: ["user-profile"],
+    queryFn: async () => {
+      try {
+        const response = await userProfileService.getCurrentProfile();
+        return response.data;
+      } catch (error) {
+        console.error("Failed to fetch user profile:", error);
+        return null;
+      }
+    },
+    retry: 1,
+  });
+
+  const getInitials = (name: string) => {
+    if (!name) return "U";
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  };
 
   return (
     <Sidebar>
@@ -226,7 +263,7 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-        <SidebarGroup>
+        {/* <SidebarGroup>
           <SidebarGroupLabel className="text-[10px] font-bold uppercase text-primary">
             Báo cáo, thống kê
           </SidebarGroupLabel>
@@ -244,18 +281,62 @@ export function AppSidebar() {
               ))}
             </SidebarMenu>
           </SidebarGroupContent>
-        </SidebarGroup>
+        </SidebarGroup> */}
       </SidebarContent>
       <SidebarFooter className="p-4 space-y-3">
-        <div className="flex items-center gap-3">
-          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10">
-            <UserCircle className="h-4 w-4 text-primary" />
-          </div>
-          <div className="flex flex-col">
-            <span className="text-xs font-medium">Admin User</span>
-            <span className="text-[10px] text-muted-foreground">Quản trị viên</span>
-          </div>
-        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <div className="flex items-center gap-3 cursor-pointer hover:bg-accent rounded-lg p-2 transition-colors">
+              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-primary font-semibold text-xs">
+                {profileData ? getInitials(profileData.fullName) : <UserCircle className="h-4 w-4" />}
+              </div>
+              <div className="flex flex-1 flex-col">
+                <span className="text-xs font-medium">{profileData?.fullName || "Người dùng"}</span>
+                <span className="text-[10px] text-muted-foreground">
+                  {profileData?.departmentName || "Đang tải..."}
+                </span>
+              </div>
+              <ChevronUp className="h-4 w-4 text-muted-foreground" />
+            </div>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent side="top" align="end" className="w-56">
+            <DropdownMenuLabel className="text-xs">
+              <div className="flex flex-col space-y-1">
+                <p className="font-medium">{profileData?.fullName || "Người dùng"}</p>
+                <p className="text-[10px] text-muted-foreground font-normal">
+                  {profileData?.email || ""}
+                </p>
+              </div>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem asChild>
+              <Link href="/profile" className="cursor-pointer">
+                <UserCircle className="mr-2 h-4 w-4" />
+                <span>Thông tin cá nhân</span>
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href="/settings" className="cursor-pointer">
+                <Settings className="mr-2 h-4 w-4" />
+                <span>Cài đặt</span>
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              className="cursor-pointer text-destructive focus:text-destructive"
+              onClick={() => {
+                // Handle logout
+                localStorage.removeItem('trucca_access_token');
+                localStorage.removeItem('trucca_refresh_token');
+                window.location.href = '/login';
+              }}
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              <span>Đăng xuất</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
         <div className="border-t pt-3 flex items-center justify-between">
           <img
             src="/images/logos/mobifone.svg"

@@ -39,8 +39,6 @@ export default function Alerts() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [API_ENDPOINTS.ALERTS.LIST] });
-      queryClient.invalidateQueries({ queryKey: ["/api/alerts/active"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
     },
   });
 

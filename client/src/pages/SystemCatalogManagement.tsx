@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Pencil, Trash2, Search, Copy, Upload, Download, FileDown, Server } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Copy, Upload, Download, FileDown, Monitor, Users } from "lucide-react";
 import { systemCatalogService } from "@/services/systemCatalogService";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,7 +37,54 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { SystemCatalog, SystemCatalogFormData } from "@/types/system-catalog";
+import { SystemCatalog, SystemCatalogFormData, Contact, GroupContact, SystemCatalogContact, SystemCatalogGroupContact } from "@/types/system-catalog";
+import { SystemCatalogContactManager } from "@/components/SystemCatalogContactManager";
+
+// Component to display assigned contacts and groups for a system catalog
+function ContactsCell({ systemCatalogId }: { systemCatalogId: string }) {
+  const { data: contactsData } = useQuery({
+    queryKey: ["system-catalog-contacts-summary", systemCatalogId],
+    queryFn: async () => {
+      const result = await systemCatalogService.getAssignedContacts(systemCatalogId);
+      return result.data || [];
+    },
+  });
+
+  const { data: groupContactsData } = useQuery({
+    queryKey: ["system-catalog-group-contacts-summary", systemCatalogId],
+    queryFn: async () => {
+      const result = await systemCatalogService.getAssignedGroupContacts(systemCatalogId);
+      return result.data || [];
+    },
+  });
+
+  const contacts = contactsData || [];
+  const groupContacts = groupContactsData || [];
+  const totalCount = contacts.length + groupContacts.length;
+
+  if (totalCount === 0) {
+    return <span className="text-sm text-muted-foreground">-</span>;
+  }
+
+  return (
+    <div className="flex flex-col gap-1">
+      {contacts.length > 0 && (
+        <div className="flex items-center gap-1">
+          <Badge variant="outline" className="text-xs">
+            {contacts.length} liên hệ
+          </Badge>
+        </div>
+      )}
+      {groupContacts.length > 0 && (
+        <div className="flex items-center gap-1">
+          <Badge variant="outline" className="text-xs">
+            {groupContacts.length} nhóm
+          </Badge>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function SystemCatalogManagement() {
   const [page, setPage] = useState(1);
@@ -51,6 +98,13 @@ export default function SystemCatalogManagement() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Contact/Group Contact management states
+  const [isContactDialogOpen, setIsContactDialogOpen] = useState(false);
+  const [isGroupContactDialogOpen, setIsGroupContactDialogOpen] = useState(false);
+  const [managingSystemId, setManagingSystemId] = useState<string | null>(null);
+  const [selectedContactIds, setSelectedContactIds] = useState<Set<number>>(new Set());
+  const [selectedGroupContactIds, setSelectedGroupContactIds] = useState<Set<number>>(new Set());
   const [formData, setFormData] = useState<SystemCatalogFormData>({
     code: "",
     name: "",
@@ -326,6 +380,11 @@ export default function SystemCatalogManagement() {
     }
   };
 
+  const handleManageContacts = (systemId: string) => {
+    setManagingSystemId(systemId);
+    setIsContactDialogOpen(true);
+  };
+
   const items = data?.data || [];
   const totalItems = data?.total || 0;
   const totalPages = Math.ceil((data?.total || 0) / limit);
@@ -335,7 +394,7 @@ export default function SystemCatalogManagement() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Server className="h-5 w-5" />
+            <Monitor className="h-5 w-5" />
             Quản lý Danh sách Hệ thống
           </CardTitle>
         </CardHeader>
@@ -411,6 +470,7 @@ export default function SystemCatalogManagement() {
                   <TableHead>Địa chỉ IP</TableHead>
                   <TableHead>Mã Polestar</TableHead>
                   <TableHead>Cấp độ</TableHead>
+                  <TableHead>Liên hệ/Nhóm</TableHead>
                   <TableHead>Trạng thái</TableHead>
                   <TableHead className="text-right">Thao tác</TableHead>
                 </TableRow>
@@ -418,13 +478,13 @@ export default function SystemCatalogManagement() {
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center">
+                    <TableCell colSpan={10} className="text-center">
                       Đang tải...
                     </TableCell>
                   </TableRow>
                 ) : items.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center text-muted-foreground">
+                    <TableCell colSpan={10} className="text-center text-muted-foreground">
                       {keyword
                         ? "Không tìm thấy kết quả phù hợp"
                         : 'Chưa có hệ thống nào. Nhấn "Thêm mới" để bắt đầu.'}
@@ -456,6 +516,9 @@ export default function SystemCatalogManagement() {
                         {item.systemLevel?.level || "-"}
                       </TableCell>
                       <TableCell>
+                        <ContactsCell systemCatalogId={item.id} />
+                      </TableCell>
+                      <TableCell>
                         {item.isActive ? (
                           <Badge variant="default" className="bg-green-600">
                             Hoạt động
@@ -466,6 +529,14 @@ export default function SystemCatalogManagement() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleManageContacts(item.id)}
+                            title="Quản lý liên hệ"
+                          >
+                            <Users className="h-4 w-4" />
+                          </Button>
                           <Button
                             variant="ghost"
                             size="icon"
@@ -701,6 +772,18 @@ export default function SystemCatalogManagement() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Contact Manager Dialog */}
+      {managingSystemId && (
+        <SystemCatalogContactManager
+          systemCatalogId={managingSystemId}
+          isOpen={isContactDialogOpen}
+          onClose={() => {
+            setIsContactDialogOpen(false);
+            setManagingSystemId(null);
+          }}
+        />
+      )}
     </div>
   );
 }

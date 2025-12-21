@@ -21,7 +21,6 @@ export interface SysSeverity {
   priorityLevel: number;       // 1-5 (5 cao nhất)
 
   // Clear Config (Simplified)
-  clearCycleCount?: number;    // Số chu kỳ liên tiếp bình thường để auto clear
   clearTimeoutMinutes?: number; // Thời gian (phút) không có vi phạm để auto clear
   clearNotificationEnabled: boolean; // Bật thông báo khi clear
 
@@ -45,7 +44,6 @@ export interface SysSeverityRequest {
   colorCode?: string;
   iconName?: string;
   priorityLevel: number;
-  clearCycleCount?: number;
   clearTimeoutMinutes?: number;
   clearNotificationEnabled?: boolean;
   isActive?: boolean;
@@ -63,7 +61,6 @@ export interface SysSeverityFormData {
   colorCode: string;
   iconName: string;
   priorityLevel: number;
-  clearCycleCount: number;
   clearTimeoutMinutes: number;
   clearNotificationEnabled: boolean;
   isActive: boolean;

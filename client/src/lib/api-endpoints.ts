@@ -117,6 +117,9 @@ export const API_ENDPOINTS = {
     IMPORT_TEMPLATE: `${API_BASE}/users/import-template`,
     COPY: `${API_BASE}/users/copy`,
     GROUPS: (id: number | string) => `${API_BASE}/users/${id}/groups`,
+    // Profile endpoints
+    ME: `${API_BASE}/users/me`,
+    CHANGE_PASSWORD: `${API_BASE}/users/me/password`,
   },
 
   // System Groups
@@ -287,6 +290,67 @@ export const API_ENDPOINTS = {
     EXPORT: `${API_BASE}/system-catalog/export`,
     IMPORT: `${API_BASE}/system-catalog/import`,
     TEMPLATE: `${API_BASE}/system-catalog/template`,
+    // Contact assignments
+    GET_CONTACTS: (id: string) => `${API_BASE}/system-catalog/${id}/contacts`,
+    ASSIGN_CONTACTS: (id: string) => `${API_BASE}/system-catalog/${id}/assign-contacts`,
+    UNASSIGN_CONTACTS: (id: string) => `${API_BASE}/system-catalog/${id}/unassign-contacts`,
+    // Group Contact assignments
+    GET_GROUP_CONTACTS: (id: string) => `${API_BASE}/system-catalog/${id}/group-contacts`,
+    ASSIGN_GROUP_CONTACTS: (id: string) => `${API_BASE}/system-catalog/${id}/assign-group-contacts`,
+    UNASSIGN_GROUP_CONTACTS: (id: string) => `${API_BASE}/system-catalog/${id}/unassign-group-contacts`,
+  },
+
+  // Error Dictionary (Từ điển mã lỗi)
+  ERROR_DICTIONARY: {
+    LIST: `${API_BASE}/error-dictionary`,
+    FILTER: `${API_BASE}/error-dictionary/filter`,
+    SEARCH: `${API_BASE}/error-dictionary/search`,
+    DETAIL: (id: number | string) => `${API_BASE}/error-dictionary/${id}`,
+    BY_CODE: (errorCode: string) => `${API_BASE}/error-dictionary/code/${errorCode}`,
+    BY_SEVERITY: (severity: string) => `${API_BASE}/error-dictionary/severity/${severity}`,
+    BY_STATUS: (status: number) => `${API_BASE}/error-dictionary/status/${status}`,
+    CREATE: `${API_BASE}/error-dictionary/create`,
+    UPDATE: `${API_BASE}/error-dictionary/edit`,
+    DELETE: (id: number | string) => `${API_BASE}/error-dictionary/delete/${id}`,
+    DELETE_MANY: `${API_BASE}/error-dictionary/delete`,
+    COPY: `${API_BASE}/error-dictionary/copy`,
+    EXPORT: `${API_BASE}/error-dictionary/export`,
+    IMPORT: `${API_BASE}/error-dictionary/import`,
+    TEMPLATE: `${API_BASE}/error-dictionary/template`,
+  },
+
+  // Log Entries (Tra cứu Log hệ thống)
+  LOG_ENTRIES: {
+    LIST: `${API_BASE}/log-entries`,
+    FILTER: `${API_BASE}/log-entries/filter`,
+    STATISTICS: `${API_BASE}/log-entries/statistics`,
+    EXPORT: `${API_BASE}/log-entries/export`,
+    CREATE: `${API_BASE}/log-entries`, // For monitoring systems only
+  },
+
+  // Alert Rule endpoints
+  ALERT_RULE: {
+    LIST: `${API_BASE}/alert-rule`,
+    DETAIL: (id: number) => `${API_BASE}/alert-rule/${id}`,
+    CREATE: `${API_BASE}/alert-rule/create`,
+    UPDATE: `${API_BASE}/alert-rule/edit`,
+    DELETE: `${API_BASE}/alert-rule/delete`,
+    COPY: `${API_BASE}/alert-rule/copy`,
+    EXPORT: `${API_BASE}/alert-rule/export`,
+    IMPORT: `${API_BASE}/alert-rule/import`,
+    TEMPLATE: `${API_BASE}/alert-rule/template`,
+    // Roles
+    ROLES: (id: number) => `${API_BASE}/alert-rule/${id}/roles`,
+    ASSIGN_ROLES: (id: number) => `${API_BASE}/alert-rule/${id}/assign-roles`,
+    UNASSIGN_ROLES: (id: number) => `${API_BASE}/alert-rule/${id}/unassign-roles`,
+    // Contacts
+    CONTACTS: (id: number) => `${API_BASE}/alert-rule/${id}/contacts`,
+    ASSIGN_CONTACTS: (id: number) => `${API_BASE}/alert-rule/${id}/assign-contacts`,
+    UNASSIGN_CONTACTS: (id: number) => `${API_BASE}/alert-rule/${id}/unassign-contacts`,
+    // Group Contacts
+    GROUP_CONTACTS: (id: number) => `${API_BASE}/alert-rule/${id}/group-contacts`,
+    ASSIGN_GROUP_CONTACTS: (id: number) => `${API_BASE}/alert-rule/${id}/assign-group-contacts`,
+    UNASSIGN_GROUP_CONTACTS: (id: number) => `${API_BASE}/alert-rule/${id}/unassign-group-contacts`,
   },
 } as const;
 

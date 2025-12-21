@@ -1,0 +1,2 @@
+Tiếp theo, code lại cho tôi màn hình Quản lý quy tắc cảnh báo (Alert Rule), tài liệu backend ở docs>ALERT_RULE_API.md. 
+Lưu ý tuân thủ các rule theo mô tả ở docs>crud-business-rule.md nhé.
